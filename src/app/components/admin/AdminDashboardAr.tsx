@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Users, Mail, TrendingUp, LogOut, AlertCircle } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import { SubscribersList } from './SubscribersList';
-import { NewsletterManager } from './NewsletterManager';
-import { DashboardStats } from './DashboardStats';
+import { SubscribersListAr } from './SubscribersListAr';
+import { NewsletterManagerAr } from './NewsletterManagerAr';
+import { DashboardStatsAr } from './DashboardStatsAr';
+import { SendEmailAr } from './SendEmailAr';
 import { apiClient } from '@/utils/api';
 
-interface AdminDashboardProps {
+interface AdminDashboardArProps {
   accessToken: string;
   onLogout: () => void;
 }
@@ -18,8 +19,8 @@ interface Stats {
   monthlyStats: Array<{ month: string; count: number }>;
 }
 
-export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter'>('overview');
+export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProps) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter' | 'email'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,7 +37,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
       setStats(data);
     } catch (err: any) {
       console.error('Failed to load stats:', err);
-      setError(err.message || 'Failed to load statistics');
+      setError(err.message || 'فشل تحميل الإحصائيات');
     } finally {
       setLoading(false);
     }
@@ -45,6 +46,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
   const tabs = [
     { id: 'overview', label: 'نظرة عامة', icon: TrendingUp },
     { id: 'subscribers', label: 'المشتركون', icon: Users },
+    { id: 'email', label: 'إرسال بريد', icon: Mail },
     { id: 'newsletter', label: 'النشرات البريدية', icon: Mail },
   ];
 
@@ -53,6 +55,10 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
       {/* Header */}
       <header className="bg-stone-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="text-right">
+            <h1 className="text-2xl font-bold">لوحة التحكم</h1>
+            <p className="text-stone-400 text-sm">إدارة موقع الكاتبة</p>
+          </div>
           <Button
             onClick={onLogout}
             variant="outline"
@@ -61,10 +67,6 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
             <LogOut className="w-4 h-4 ml-2" />
             تسجيل الخروج
           </Button>
-          <div className="text-right">
-            <h1 className="text-2xl font-bold">لوحة التحكم</h1>
-            <p className="text-stone-400 text-sm">إدارة موقع الكاتبة</p>
-          </div>
         </div>
       </header>
 
@@ -74,7 +76,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800">Error</p>
+              <p className="text-sm font-medium text-red-800">خطأ</p>
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
@@ -88,7 +90,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
             <Card className="p-6 bg-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-stone-600 mb-1">Total Subscribers</p>
+                  <p className="text-sm text-stone-600 mb-1">إجمالي المشتركين</p>
                   <p className="text-3xl font-bold text-stone-900">{stats.totalSubscribers}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -100,7 +102,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
             <Card className="p-6 bg-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-stone-600 mb-1">Active Subscribers</p>
+                  <p className="text-sm text-stone-600 mb-1">المشتركون النشطون</p>
                   <p className="text-3xl font-bold text-stone-900">{stats.activeSubscribers}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -112,7 +114,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
             <Card className="p-6 bg-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-stone-600 mb-1">This Month</p>
+                  <p className="text-sm text-stone-600 mb-1">هذا الشهر</p>
                   <p className="text-3xl font-bold text-stone-900">
                     {stats.monthlyStats[stats.monthlyStats.length - 1]?.count || 0}
                   </p>
@@ -166,19 +168,19 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
         {/* Content */}
         <div className="pb-12">
           {activeTab === 'overview' && stats && (
-            <DashboardStats stats={stats} onRefresh={loadStats} />
+            <DashboardStatsAr stats={stats} onRefresh={loadStats} />
           )}
           
           {activeTab === 'subscribers' && (
-            <SubscribersList accessToken={accessToken} onUpdate={loadStats} />
+            <SubscribersListAr accessToken={accessToken} onUpdate={loadStats} />
           )}
           
           {activeTab === 'email' && (
-            <SendEmail accessToken={accessToken} />
+            <SendEmailAr accessToken={accessToken} />
           )}
           
           {activeTab === 'newsletter' && (
-            <NewsletterManager accessToken={accessToken} />
+            <NewsletterManagerAr accessToken={accessToken} />
           )}
         </div>
       </div>

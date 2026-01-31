@@ -470,5 +470,293 @@
     "type": "newsletter",
     "content": "<h2>Hello Subscribers!</h2><p>This is a <strong>test newsletter</strong> with <em>rich formatting</em>.</p><ul><li>Feature 1</li><li>Feature 2</li><li>Feature 3</li></ul>...",
     "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:01:58.586Z",
+    "to": "subscriber3@example.com",
+    "subject": "Test Newsletter",
+    "type": "newsletter",
+    "content": "<h2>Hello!</h2><p>This is a test newsletter to verify email sending is working.</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:02:00.931Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "Test Newsletter",
+    "type": "newsletter",
+    "content": "<h2>Hello!</h2><p>This is a test newsletter to verify email sending is working.</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:02:03.337Z",
+    "to": "test-723065094@gmail.com",
+    "subject": "Test Newsletter",
+    "type": "newsletter",
+    "content": "<h2>Hello!</h2><p>This is a test newsletter to verify email sending is working.</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:02:05.829Z",
+    "to": "test-1663559126@gmail.com",
+    "subject": "Test Newsletter",
+    "type": "newsletter",
+    "content": "<h2>Hello!</h2><p>This is a test newsletter to verify email sending is working.</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:02:08.258Z",
+    "to": "test-1834886096@gmail.com",
+    "subject": "Test Newsletter",
+    "type": "newsletter",
+    "content": "<h2>Hello!</h2><p>This is a test newsletter to verify email sending is working.</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:42.502Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:45.379Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:47.819Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:50.218Z",
+    "to": "subscriber1@example.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:52.739Z",
+    "to": "subscriber2@example.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:55.219Z",
+    "to": "subscriber3@example.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:04:57.779Z",
+    "to": "test-1663559126@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:05:00.179Z",
+    "to": "test-1834886096@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:05:02.622Z",
+    "to": "test-723065094@gmail.com",
+    "subject": "🎉 IT'S HERE! Your Epic Journey Begins TODAY! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 THE MOMENT HAS ARRIVED 🌟</h1><p class=\"ql-align-center\">Your adventure is waiting. Are you ready?</p><h2 class=\"ql-align-center\">After months of anticipation...</h2><p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:56:50.326Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:56:52.692Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:56:55.187Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:56:57.750Z",
+    "to": "subscriber1@example.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:57:00.172Z",
+    "to": "subscriber2@example.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:57:02.618Z",
+    "to": "subscriber3@example.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:57:05.197Z",
+    "to": "test-1663559126@gmail.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T09:57:07.502Z",
+    "to": "test-723065094@gmail.com",
+    "subject": "Moath",
+    "type": "newsletter",
+    "content": "<p>me</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:08.910Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:12.004Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:15.365Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:18.135Z",
+    "to": "subscriber1@example.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:20.605Z",
+    "to": "subscriber2@example.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:23.735Z",
+    "to": "subscriber3@example.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:26.311Z",
+    "to": "test-1663559126@gmail.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:05:28.740Z",
+    "to": "test-723065094@gmail.com",
+    "subject": "معاذ",
+    "type": "newsletter",
+    "content": "<p>معاذ</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:09:55.056Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "حياة",
+    "type": "email",
+    "content": "حياة جميلة...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:09:57.519Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "حياة",
+    "type": "email",
+    "content": "حياة جميلة...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:10:33.782Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "معاذ",
+    "type": "email",
+    "content": "معاذ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:10:36.045Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "معاذ",
+    "type": "email",
+    "content": "معاذ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:11:41.273Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "معاذ",
+    "type": "email",
+    "content": "معاذ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-01-29T10:11:43.858Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "معاذ",
+    "type": "email",
+    "content": "معاذ...",
+    "status": "sent"
   }
 ]

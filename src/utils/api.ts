@@ -1,7 +1,10 @@
 // Detect environment and set API base URL
 const getApiBase = () => {
-  // Always use relative paths for API calls
-  // This works for both local dev and Cloudflare Pages
+  // In development, use local backend
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:3001';
+  }
+  // In production, use relative paths for Cloudflare Pages
   return '';
 };
 

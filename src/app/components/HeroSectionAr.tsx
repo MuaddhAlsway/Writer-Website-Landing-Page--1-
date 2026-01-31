@@ -15,8 +15,11 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <h1 className="text-5xl md:text-7xl leading-tight mb-6 text-stone-900">
-            بعض القصص تختارنا.<br />
-            وهذه اختارتني.
+             
+
+لا تكُن سَبَهْلَلًا <br />
+كتابٌ عن النجاة من العبث، واسترداد المعنى 
+قبل أن يتآكل العمر بلا قصد 
           </h1>
         </motion.div>
         
@@ -26,8 +29,15 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           className="text-xl md:text-2xl text-stone-600 mb-12 leading-relaxed max-w-2xl mx-auto"
         >
-          قصة عن المساحات بين ما نقوله وما نعنيه.
-          عن إيجاد نفسك في الصمت.
+           
+
+هذا الكتابَ ليس مُجلّداً في الوعظ، 
+ولا دليلًا سريعًا للنجاة، 
+ولا وعدًا بتغييرٍ فوريّ 
+
+بل محاولة جادّة 
+لإعادة الإنسان إلى سؤاله الأوّل: 
+من أنا؟ 
         </motion.p>
         
         <motion.div

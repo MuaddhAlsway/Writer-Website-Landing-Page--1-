@@ -18,7 +18,7 @@ interface Newsletter {
   recipientCount: number;
 }
 
-interface NewsletterManagerProps {
+interface NewsletterManagerArProps {
   accessToken: string;
 }
 
@@ -44,7 +44,7 @@ const quillModules = {
   ],
 };
 
-export function NewsletterManager({ accessToken }: NewsletterManagerProps) {
+export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [subject, setSubject] = useState('');
@@ -208,11 +208,11 @@ export function NewsletterManager({ accessToken }: NewsletterManagerProps) {
         <h2 className="text-2xl font-bold text-stone-900">إدارة النشرات البريدية</h2>
         <div className="flex gap-2">
           <Button
-            onClick={() => setModal({ type: 'templates', title: 'قوالس النشرات البريدية', message: '' })}
+            onClick={() => setModal({ type: 'templates', title: 'قوالب النشرات البريدية', message: '' })}
             variant="outline"
             className="text-stone-700"
           >
-            📋 القوالس
+            📋 القوالب
           </Button>
           <Button
             onClick={() => setShowCreateForm(!showCreateForm)}

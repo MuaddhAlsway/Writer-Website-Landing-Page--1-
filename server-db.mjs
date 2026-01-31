@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 
 dotenv.config();
 
@@ -14,16 +13,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, 'admin.db');
 const emailLogPath = path.join(__dirname, 'email-log.json');
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer with Gmail
+const emailUser = process.env.EMAIL_USER || 'muaddhalsway@gmail.com';
+const emailPass = process.env.EMAIL_PASSWORD || 'bovnptattnqmehhpmy';
 
-// Initialize Nodemailer
+console.log(`[INIT] Email User: ${emailUser}`);
+console.log(`[INIT] Email Pass Length: ${emailPass.length}`);
+console.log(`[INIT] Email Pass (first 5 chars): ${emailPass.substring(0, 5)}...`);
+
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    user: emailUser,
+    pass: emailPass,
   },
+});
+
+// Verify transporter connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[VERIFY] Gmail connection failed:', error.message);
+  } else {
+    console.log('[VERIFY] Gmail connection successful!');
+  }
 });
 
 // Email template helper
@@ -174,42 +186,9 @@ async function sendEmailViaNodemailer(to, subject, html) {
   }
 }
 
-// Send email via Resend (fallback)
-async function sendEmailViaResend(to, subject, html) {
-  try {
-    const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'onboarding@resend.dev',
-      to: to,
-      subject: subject,
-      html: html,
-    });
-
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-
-    return { success: true, id: result.data.id, service: 'resend' };
-  } catch (err) {
-    console.error(`Error sending via Resend to ${to}:`, err.message);
-    throw err;
-  }
-}
-
-// Send email - use Resend FIRST (PRIMARY), fallback to Nodemailer
+// Send email - use Nodemailer (Gmail) only
 async function sendEmail(to, subject, html) {
-  try {
-    // Try Resend first (PRIMARY)
-    return await sendEmailViaResend(to, subject, html);
-  } catch (resendErr) {
-    console.error(`Resend failed, trying Nodemailer...`);
-    try {
-      // Fallback to Nodemailer if Resend fails
-      return await sendEmailViaNodemailer(to, subject, html);
-    } catch (nodemailerErr) {
-      console.error(`Both services failed for ${to}`);
-      throw resendErr; // Throw original Resend error
-    }
-  }
+  return await sendEmailViaNodemailer(to, subject, html);
 }
 
 // Initialize database
@@ -598,8 +577,7 @@ const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Admin API server running on http://localhost:${PORT}`);
   console.log(`Database: ${dbPath}`);
-  console.log(`Email Service: Nodemailer & Resend`);
-  console.log(`Primary Service: ${process.env.EMAIL_SERVICE_PROVIDER || 'Nodemailer'}`);
+  console.log(`Email Service: Nodemailer (Gmail SMTP)`);
   console.log(`Gmail Account: ${process.env.EMAIL_USER || 'Not configured'}`);
   console.log(`\nTest admin credentials:`);
   console.log(`Email: admin@example.com`);

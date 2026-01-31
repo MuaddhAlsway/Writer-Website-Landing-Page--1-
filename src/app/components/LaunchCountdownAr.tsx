@@ -7,8 +7,8 @@ export function LaunchCountdownAr() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   
-  // Launch date: 3 months from now (April 18, 2026)
-  const launchDate = new Date('2026-04-18T00:00:00');
+  // Launch date: January 1, 2027
+  const launchDate = new Date('2027-01-01T00:00:00');
   
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -60,7 +60,7 @@ export function LaunchCountdownAr() {
           </h2>
           
           <p className="text-xl text-stone-400 mb-12">
-            ١٨ أبريل ٢٠٢٦
+            ١ يناير ٢٠٢٧
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
@@ -83,7 +83,7 @@ export function LaunchCountdownAr() {
           </div>
 
           <p className="text-stone-400 mt-12 italic text-lg">
-            كل قصة عظيمة تستحق الانتظار. هذه ستستحق انتظارك.
+           لا تقلق.. هذا الكتابُ مازالَ يُطبَخ على نار هادئة. و لكنهُ يستحقُّ الانتظار.  
           </p>
         </motion.div>
       </div>

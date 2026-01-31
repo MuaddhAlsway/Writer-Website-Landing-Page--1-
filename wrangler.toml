@@ -6,13 +6,17 @@ pages_build_output_dir = "dist"
 
 [vars]
 ENVIRONMENT = "production"
-RESEND_API_KEY = "re_BsDneXUF_MgwUamRU1qnPHNCnDwGnrZ72"
-FROM_EMAIL = "noreply@news.example.com"
+EMAIL_SERVICE = "gmail"
+EMAIL_USER = "muaddhalsway@gmail.com"
+EMAIL_PASSWORD = "bovnptattnqmehhp"
+EMAIL_FROM = "muaddhalsway@gmail.com"
 
 [env.production]
 name = "author-fatima-prod"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-RESEND_API_KEY = "re_BsDneXUF_MgwUamRU1qnPHNCnDwGnrZ72"
-FROM_EMAIL = "noreply@news.example.com"
+EMAIL_SERVICE = "gmail"
+EMAIL_USER = "muaddhalsway@gmail.com"
+EMAIL_PASSWORD = "bovnptattnqmehhp"
+EMAIL_FROM = "muaddhalsway@gmail.com"

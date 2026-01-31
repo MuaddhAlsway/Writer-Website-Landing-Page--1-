@@ -19,14 +19,11 @@ export function BookTeaserAr() {
           <Quote className="w-12 h-12 mx-auto mb-8 text-amber-200 opacity-50" />
           
           <blockquote className="text-2xl md:text-3xl leading-relaxed mb-8 italic text-stone-100">
-            «كانت تعتقد أن الصمت هو غياب الصوت. الآن تعرف
-            أنه حضور كل ما لم يُقَل. وربما—فقط ربما—هنا
-            تعيش كل الحقيقة. في المساحات بين الكلمات، حيث لا يستطيع الخوف
-            اللحاق والحب لا يحتاج إذناً.»
+            «الصحةُ رأس مالٍ، والفراغُ ميدانُ عمل، فإذا استُهلِكت الصحّة في لهوٍ، وامتلأ الفراغُ بباطلٍ، لم يتبقّى من العمر شيءٌ سوا قشرةٍ خاوية. »
           </blockquote>
           
           <p className="text-stone-400 text-sm tracking-wider uppercase">
-            — من الفصل السابع
+            
           </p>
         </motion.div>
       </div>

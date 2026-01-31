@@ -10,18 +10,18 @@ export function ReaderExperienceAr() {
   const experiences = [
     {
       icon: Heart,
-      title: "شعور عميق",
-      description: "ستشعر بأنك مرئي بطرق لم تكن تعلم أنك تحتاجها. ستحتضن هذه القصة قلبك بلطف، حتى وهي تفتحه على مصراعيه."
-    },
-    {
-      icon: Sparkles,
-      title: "تحوّل هادئ",
+      title: "كُنْ",
       description: "ستُغلق الصفحة الأخيرة مختلفاً عما كنت حين فتحت الأولى. شيء بداخلك سيتغير، سيلين، سيستيقظ."
     },
     {
+      icon: Sparkles,
+      title: "كوِّنْ make ",
+      description: "ستخرج من أسر التردّد إلى ميدان الفعل،وتتعلّم كيف يُصاغ المعنى بالمبادرة، لا بالتمنّي، وبالعمل المتدرّج لا بالانتظار الطويل"
+    },
+    {
       icon: Moon,
-      title: "حضور سلمي",
-      description: "ستبقى الشخصيات معك طويلاً بعد انتهاء القراءة. ستفكر فيهم في لحظات الهدوء، معترفاً بقطع من نفسك في رحلتهم."
+      title: "تَكَوَّنْ",
+      description: "ستستوي لك الوجهة، ويجتمع شتاتك على قصدٍ واحد، فتسير ولا تلتفِت وتغدو أفعالك امتدادًا لما تؤمن به لا بما يُملى عليك."
     }
   ];
 
@@ -35,10 +35,10 @@ export function ReaderExperienceAr() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl mb-6 text-stone-900 leading-tight">
-            ما الذي ستختبره
+            رحلة التحول
           </h2>
-          <p className="text-xl text-stone-600 max-w-2xl mx-auto">
-            هذا الكتاب لا يُقرأ فقط—بل يُشعَر به. إليك ما ينتظرك.
+          <p className="text-xl text-stone-600 max-w-3xl mx-auto">
+            لا تكُن سَبَهْلَلًا. كتابٌ عن النجاة من العبث، واسترداد المعنى قبل أن يتآكل العمر بلا قصد.
           </p>
         </motion.div>
 
