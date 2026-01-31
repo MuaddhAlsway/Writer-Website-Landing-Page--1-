@@ -108,32 +108,33 @@ project-root/
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18.3.1** - UI library
-- **TypeScript** - Type safety
-- **Vite 6.3.5** - Build tool & dev server
-- **Tailwind CSS 4.1.12** - Utility-first styling
-- **Radix UI** - Headless component library
-- **Motion (Framer Motion)** - Animations
-- **Recharts** - Data visualization
-- **Lucide React** - Icons
+![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=flat-square&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6.3.5-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.1.12-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Radix UI](https://img.shields.io/badge/Radix%20UI-Headless-161618?style=flat-square&logo=radixui&logoColor=white)
+![Motion](https://img.shields.io/badge/Motion-Animations-000000?style=flat-square&logo=framer&logoColor=white)
+![Recharts](https://img.shields.io/badge/Recharts-Charts-8884D8?style=flat-square)
+![Lucide React](https://img.shields.io/badge/Lucide%20React-Icons-F97316?style=flat-square)
 
 ### Backend
-- **Express.js** - Node.js framework
-- **Better SQLite3** - Local database
-- **Cloudflare D1** - Serverless SQL database
-- **Itty Router** - Lightweight router
-- **Resend** - Email API (primary)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=node.js&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Cloudflare D1](https://img.shields.io/badge/Cloudflare%20D1-Serverless%20SQL-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![Itty Router](https://img.shields.io/badge/Itty%20Router-Lightweight-FF6B6B?style=flat-square)
 
-### Deployment
-- **Cloudflare Pages** - Frontend hosting
-- **Cloudflare Workers** - Serverless backend
-- **Wrangler** - Cloudflare CLI
+### Deployment & Infrastructure
+![Cloudflare Pages](https://img.shields.io/badge/Cloudflare%20Pages-Frontend-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-Serverless-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![Wrangler](https://img.shields.io/badge/Wrangler-CLI-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 
 ### Email Services
-- **Resend** (primary)
-- **Nodemailer** (Gmail/SMTP)
-- **MailerSend**, **SendGrid**, **Mailgun** (alternatives)
-- **Formspree** (form submissions)
+![Resend](https://img.shields.io/badge/Resend-Primary%20Email-000000?style=flat-square)
+![Nodemailer](https://img.shields.io/badge/Nodemailer-Gmail%2FSMTP-0B7285?style=flat-square)
+![MailerSend](https://img.shields.io/badge/MailerSend-Alternative-FF6B35?style=flat-square)
+![SendGrid](https://img.shields.io/badge/SendGrid-Alternative-1A73E8?style=flat-square)
+![Mailgun](https://img.shields.io/badge/Mailgun-Alternative-F06B66?style=flat-square)
+![Formspree](https://img.shields.io/badge/Formspree-Forms-4A90E2?style=flat-square)
 
 ---
 
