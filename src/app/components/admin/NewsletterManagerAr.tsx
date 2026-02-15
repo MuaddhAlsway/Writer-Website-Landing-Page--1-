@@ -158,10 +158,11 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
         setSending(id);
         try {
           const result = await apiClient.sendNewsletter(id);
+          const count = result.count || result.recipientCount || 0;
           setModal({
             type: 'success',
             title: 'تم الإرسال',
-            message: `تم إرسال النشرة البريدية بنجاح إلى ${result.recipientCount} مستقبل!`,
+            message: `تم إرسال النشرة البريدية بنجاح إلى ${count} مستقبل!`,
           });
           loadNewsletters();
         } catch (err: any) {

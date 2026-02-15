@@ -1,5 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 app.use(cors({
@@ -7,6 +11,15 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Setup Nodemailer with Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 // In-memory storage
 const subscribers = new Map();
@@ -169,7 +182,17 @@ app.post('/make-server-53bed28f/newsletters/:id/send', (req, res) => {
   newsletter.status = 'sent';
   newsletter.sentAt = new Date().toISOString();
   
-  res.json({ success: true, newsletter });
+  // Get recipient count based on language
+  let recipientCount = 0;
+  if (!newsletter.language || newsletter.language === '') {
+    // Send to all subscribers
+    recipientCount = subscribers.size;
+  } else {
+    // Send to subscribers with matching language
+    recipientCount = Array.from(subscribers.values()).filter(s => s.language === newsletter.language).length;
+  }
+  
+  res.json({ success: true, newsletter, recipientCount });
 });
 
 app.delete('/make-server-53bed28f/newsletters/:id', (req, res) => {

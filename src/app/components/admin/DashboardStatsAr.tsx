@@ -13,18 +13,70 @@ interface DashboardStatsArProps {
 }
 
 export function DashboardStatsAr({ stats, onRefresh }: DashboardStatsArProps) {
+  // Helper function to parse month string safely
+  const parseMonthDate = (monthStr: string): Date | null => {
+    try {
+      if (!monthStr || typeof monthStr !== 'string') {
+        return null;
+      }
+
+      // Handle format like "2026-02"
+      if (monthStr.match(/^\d{4}-\d{2}$/)) {
+        const [year, month] = monthStr.split('-');
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
+        
+        if (isNaN(yearNum) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+          return null;
+        }
+        
+        const date = new Date(yearNum, monthNum - 1, 1);
+        return isNaN(date.getTime()) ? null : date;
+      }
+      
+      // Handle format like "2026-02-01"
+      if (monthStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const date = new Date(monthStr + 'T00:00:00Z');
+        return isNaN(date.getTime()) ? null : date;
+      }
+      
+      // Try parsing as ISO string
+      const date = new Date(monthStr);
+      return isNaN(date.getTime()) ? null : date;
+    } catch (e) {
+      console.error('Error parsing month date:', monthStr, e);
+      return null;
+    }
+  };
+
   // Format month data for charts
-  const chartData = stats.monthlyStats.map((stat) => ({
-    month: new Date(stat.month + '-01').toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }),
-    subscribers: stat.count,
-  }));
+  const chartData = stats.monthlyStats.map((stat) => {
+    const date = parseMonthDate(stat.month);
+    if (date && !isNaN(date.getTime())) {
+      return {
+        month: date.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }),
+        subscribers: stat.count,
+      };
+    }
+    return {
+      month: stat.month,
+      subscribers: stat.count,
+    };
+  });
 
   // Calculate cumulative data
   let cumulative = 0;
   const cumulativeData = stats.monthlyStats.map((stat) => {
     cumulative += stat.count;
+    const date = parseMonthDate(stat.month);
+    if (date && !isNaN(date.getTime())) {
+      return {
+        month: date.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }),
+        total: cumulative,
+      };
+    }
     return {
-      month: new Date(stat.month + '-01').toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }),
+      month: stat.month,
       total: cumulative,
     };
   });
@@ -75,29 +127,23 @@ export function DashboardStatsAr({ stats, onRefresh }: DashboardStatsArProps) {
             <thead>
               <tr className="border-b border-stone-200">
                 <th className="text-right py-3 px-4 text-stone-700 font-semibold">الشهر</th>
-                <th className="text-right py-3 px-4 text-stone-700 font-semibold">مشتركون جدد</th>
-                <th className="text-right py-3 px-4 text-stone-700 font-semibold">الإجمالي التراكمي</th>
+                <th className="text-right py-3 px-4 text-stone-700 font-semibold">الحالة</th>
               </tr>
             </thead>
             <tbody>
-              {stats.monthlyStats.map((stat, index) => {
-                const cumulativeTotal = stats.monthlyStats
-                  .slice(0, index + 1)
-                  .reduce((sum, s) => sum + s.count, 0);
+              {stats.monthlyStats.map((stat) => {
+                const date = parseMonthDate(stat.month);
+                const monthDisplay = date && !isNaN(date.getTime()) 
+                  ? date.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })
+                  : stat.month;
                 
                 return (
                   <tr key={stat.month} className="border-b border-stone-100 hover:bg-stone-50">
                     <td className="py-3 px-4 text-stone-900">
-                      {new Date(stat.month + '-01').toLocaleDateString('ar-SA', { 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </td>
-                    <td className="py-3 px-4 text-right text-stone-900 font-medium">
-                      {stat.count}
+                      {monthDisplay}
                     </td>
                     <td className="py-3 px-4 text-right text-stone-600">
-                      {cumulativeTotal}
+                      ✓ نشط ({stat.count})
                     </td>
                   </tr>
                 );

@@ -2,19 +2,21 @@ import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Card } from '@/app/components/ui/card';
-import { LogIn, UserPlus, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, CheckCircle, Mail, Lock } from 'lucide-react';
+import { apiClient } from '@/utils/api';
+import { ForgotPasswordFlowAr } from './ForgotPasswordFlowAr';
 
 interface AdminLoginArProps {
-  onLogin: (token: string, expiresIn: number) => void;
+  onLogin: (token: string, refreshToken: string, expiresIn: number) => void;
 }
 
 export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
-  const [isSignup, setIsSignup] = useState(false);
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -24,20 +26,23 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       if (!validateEmail(email)) {
         throw new Error('يرجى إدخال عنوان بريد إلكتروني صحيح');
       }
 
-      if (password.length < 6) {
-        throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
+      if (password.length < 12) {
+        throw new Error('يجب أن تكون كلمة المرور 12 حرف على الأقل');
       }
 
-      const mockToken = 'mock-token-' + Date.now();
-      localStorage.setItem('adminToken', mockToken);
-      localStorage.setItem('adminEmail', email);
-      onLogin(mockToken, 3600);
+      // Call backend login endpoint
+      const response = await apiClient.adminLogin(email, password);
+      
+      if (response.accessToken && response.refreshToken) {
+        onLogin(response.accessToken, response.refreshToken, response.expiresIn || 900);
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'فشل تسجيل الدخول');
@@ -46,68 +51,71 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       if (!validateEmail(email)) {
         throw new Error('يرجى إدخال عنوان بريد إلكتروني صحيح');
       }
 
-      if (password.length < 6) {
-        throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
-      }
-
-      if (!name.trim()) {
-        throw new Error('الاسم مطلوب');
-      }
-
-      const mockToken = 'mock-token-' + Date.now();
-      localStorage.setItem('adminToken', mockToken);
-      localStorage.setItem('adminEmail', email);
-      onLogin(mockToken, 3600);
+      // Call backend forgot password endpoint
+      await apiClient.requestPasswordReset(email);
+      
+      setSuccess('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد الخاص بك.');
+      setEmail('');
+      setTimeout(() => {
+        setMode('forgot');
+        setSuccess('');
+      }, 2000);
     } catch (err: any) {
-      console.error('Signup error:', err);
-      setError(err.message || 'فشل إنشاء الحساب');
+      console.error('Forgot password error:', err);
+      setError(err.message || 'فشل إرسال رابط إعادة التعيين');
     } finally {
       setLoading(false);
     }
   };
 
+  if (mode === 'forgot') {
+    return (
+      <ForgotPasswordFlowAr 
+        onBack={() => {
+          setMode('login');
+          setEmail('');
+          setPassword('');
+          setError('');
+          setSuccess('');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-100 to-amber-50 px-6" dir="rtl">
       <Card className="w-full max-w-md p-8 shadow-2xl">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            {mode === 'login' ? (
+              <Lock className="w-12 h-12 text-stone-800" />
+            ) : (
+              <Mail className="w-12 h-12 text-stone-800" />
+            )}
+          </div>
           <h1 className="text-3xl font-bold text-stone-900 mb-2">
-            {isSignup ? 'إنشاء حساب المسؤول' : 'تسجيل دخول المسؤول'}
+            {mode === 'login' ? 'تسجيل دخول المسؤول' : 'إعادة تعيين كلمة المرور'}
           </h1>
           <p className="text-stone-600">
-            {isSignup ? 'قم بإعداد حساب المسؤول الخاص بك' : 'الوصول إلى لوحة التحكم الخاصة بك'}
+            {mode === 'login' ? 'الوصول إلى لوحة التحكم الخاصة بك' : 'أدخل بريدك الإلكتروني لتلقي رابط إعادة التعيين'}
           </p>
         </div>
 
-        <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
-          {isSignup && (
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                الاسم
-              </label>
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required={isSignup}
-                placeholder="اسمك"
-                className="w-full"
-              />
-            </div>
-          )}
-
+        <form onSubmit={mode === 'login' ? handleLogin : handleForgotPassword} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-2">
-              البريد الإلكتروني
+              عنوان البريد الإلكتروني
             </label>
             <Input
               type="email"
@@ -119,21 +127,23 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">
-              كلمة المرور
-            </label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full"
-              minLength={6}
-            />
-            <p className="text-xs text-stone-500 mt-1">6 أحرف على الأقل</p>
-          </div>
+          {mode === 'login' && (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                كلمة المرور
+              </label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full"
+                minLength={6}
+              />
+              <p className="text-xs text-stone-500 mt-1">6 أحرف على الأقل</p>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
@@ -142,24 +152,31 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
             </div>
           )}
 
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-600">{success}</p>
+            </div>
+          )}
+
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-stone-800 hover:bg-stone-900 text-white py-3"
+            className="w-full bg-stone-800 hover:bg-stone-900 text-white py-3 font-semibold"
           >
             {loading ? (
               'جاري المعالجة...'
             ) : (
               <>
-                {isSignup ? (
-                  <>
-                    <UserPlus className="w-4 h-4 ml-2" />
-                    إنشاء حساب
-                  </>
-                ) : (
+                {mode === 'login' ? (
                   <>
                     <LogIn className="w-4 h-4 ml-2" />
                     تسجيل الدخول
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 ml-2" />
+                    إرسال رابط إعادة التعيين
                   </>
                 )}
               </>
@@ -170,12 +187,15 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
         <div className="mt-6 text-center">
           <button
             onClick={() => {
-              setIsSignup(!isSignup);
+              setMode(mode === 'login' ? 'forgot' : 'login');
               setError('');
+              setSuccess('');
+              setPassword('');
+              setEmail('');
             }}
-            className="text-stone-600 hover:text-stone-900 text-sm"
+            className="text-stone-600 hover:text-stone-900 text-sm font-medium transition-colors"
           >
-            {isSignup ? 'هل لديك حساب بالفعل؟ تسجيل الدخول' : 'هل تحتاج إلى حساب؟ إنشاء حساب'}
+            {mode === 'login' ? 'هل نسيت كلمة المرور؟' : 'العودة إلى تسجيل الدخول'}
           </button>
         </div>
       </Card>

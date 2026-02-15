@@ -1,7 +1,7 @@
 // Detect environment and set API base URL
 const getApiBase = () => {
-  // In development, use local backend
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  // In development, use direct backend URL
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:3001';
   }
   // In production, use relative paths for Cloudflare Pages
@@ -11,33 +11,122 @@ const getApiBase = () => {
 const FORMSPREE_ID = 'xeeevlgk';
 
 class ApiClient {
-  private token: string | null = null;
+  private accessToken: string | null = null;
+  private refreshToken: string | null = null;
   private apiBase: string;
+  private tokenRefreshPromise: Promise<string> | null = null;
 
   constructor() {
     this.apiBase = getApiBase();
+    this.loadTokensFromStorage();
   }
 
-  setToken(token: string | null) {
-    this.token = token;
+  private loadTokensFromStorage() {
+    if (typeof window !== 'undefined') {
+      this.accessToken = localStorage.getItem('admin_access_token');
+      this.refreshToken = localStorage.getItem('admin_refresh_token');
+    }
+  }
+
+  private saveTokensToStorage() {
+    if (typeof window !== 'undefined') {
+      if (this.accessToken) {
+        localStorage.setItem('admin_access_token', this.accessToken);
+      }
+      if (this.refreshToken) {
+        localStorage.setItem('admin_refresh_token', this.refreshToken);
+      }
+    }
+  }
+
+  setTokens(accessToken: string, refreshToken: string) {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.saveTokensToStorage();
+  }
+
+  setToken(accessToken: string) {
+    this.accessToken = accessToken;
+    this.saveTokensToStorage();
+  }
+
+  clearTokens() {
+    this.accessToken = null;
+    this.refreshToken = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_refresh_token');
+    }
+  }
+
+  private async refreshAccessToken(): Promise<string> {
+    // Prevent multiple simultaneous refresh requests
+    if (this.tokenRefreshPromise) {
+      return this.tokenRefreshPromise;
+    }
+
+    this.tokenRefreshPromise = (async () => {
+      try {
+        if (!this.refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        const url = this.apiBase ? `${this.apiBase}/api/admin/refresh` : '/api/admin/refresh';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: this.refreshToken }),
+        });
+
+        if (!response.ok) {
+          this.clearTokens();
+          throw new Error('Token refresh failed');
+        }
+
+        const data = await response.json();
+        this.accessToken = data.accessToken;
+        this.saveTokensToStorage();
+        return data.accessToken;
+      } finally {
+        this.tokenRefreshPromise = null;
+      }
+    })();
+
+    return this.tokenRefreshPromise;
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${this.apiBase}${endpoint}`;
+    // Use absolute URL in development, relative in production
+    const url = this.apiBase ? `${this.apiBase}${endpoint}` : endpoint;
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
     try {
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         ...options,
         headers,
       });
+
+      // If 401, try to refresh token and retry
+      if (response.status === 401 && this.refreshToken && endpoint !== '/api/admin/login') {
+        try {
+          const newAccessToken = await this.refreshAccessToken();
+          headers['Authorization'] = `Bearer ${newAccessToken}`;
+          response = await fetch(url, {
+            ...options,
+            headers,
+          });
+        } catch (err) {
+          this.clearTokens();
+          throw new Error('Session expired. Please login again.');
+        }
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -135,6 +224,65 @@ class ApiClient {
     return this.request('/make-server-53bed28f/send-email', {
       method: 'POST',
       body: JSON.stringify({ recipients, subject, content }),
+    });
+  }
+
+  // Admin Authentication
+  async adminLogin(email: string, password: string) {
+    const response = await this.request('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    
+    if (response.accessToken && response.refreshToken) {
+      this.setTokens(response.accessToken, response.refreshToken);
+    }
+    
+    return response;
+  }
+
+  async adminLogout() {
+    try {
+      await this.request('/api/admin/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    } finally {
+      this.clearTokens();
+    }
+  }
+
+  async requestPasswordReset(email: string) {
+    return this.request('/api/admin/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    return this.request('/api/admin/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async updateAdminProfile(updates: { email?: string; username?: string; name?: string }) {
+    return this.request('/api/admin/profile', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request('/api/admin/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  async getAdminProfile() {
+    return this.request('/api/admin/profile', {
+      method: 'GET',
     });
   }
 }

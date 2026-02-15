@@ -4,13 +4,14 @@ compatibility_date = "2024-12-18"
 # Cloudflare Pages Configuration
 pages_build_output_dir = "dist"
 
+# Environment variables
 [vars]
 ENVIRONMENT = "production"
 EMAIL_SERVICE = "gmail"
 EMAIL_USER = "muaddhalsway@gmail.com"
-EMAIL_PASSWORD = "bovnptattnqmehhp"
 EMAIL_FROM = "muaddhalsway@gmail.com"
 
+# Production environment
 [env.production]
 name = "author-fatima-prod"
 
@@ -18,5 +19,10 @@ name = "author-fatima-prod"
 ENVIRONMENT = "production"
 EMAIL_SERVICE = "gmail"
 EMAIL_USER = "muaddhalsway@gmail.com"
-EMAIL_PASSWORD = "bovnptattnqmehhp"
 EMAIL_FROM = "muaddhalsway@gmail.com"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "newsletter-db"
+database_id = "fef0830f-e2fa-458e-a974-28644621ddeb"

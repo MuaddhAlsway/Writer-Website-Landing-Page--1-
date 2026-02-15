@@ -758,5 +758,85 @@
     "type": "email",
     "content": "معاذ...",
     "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:10:52.580Z",
+    "to": "muuaddtesting@gmail.com",
+    "subject": "الحياة",
+    "type": "email",
+    "content": "<p>حياة جميلة</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:10:55.785Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "الحياة",
+    "type": "email",
+    "content": "<p>حياة جميلة</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:10:58.265Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "الحياة",
+    "type": "email",
+    "content": "<p>حياة جميلة</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:11:01.790Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "الحياة",
+    "type": "email",
+    "content": "<p>حياة جميلة</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:12:00.660Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "🎉 لقد وصلت! مغامرتك تبدأ اليوم! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 اللحظة قد حانت 🌟</h1><p class=\"ql-align-center\">مغامرتك تنتظر. هل أنت مستعد؟</p><h2 class=\"ql-align-center\">بعد أشهر من الانتظار والتشويق...</h2><p>نحن متحمسون جداً للإ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:12:03.290Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "🎉 لقد وصلت! مغامرتك تبدأ اليوم! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 اللحظة قد حانت 🌟</h1><p class=\"ql-align-center\">مغامرتك تنتظر. هل أنت مستعد؟</p><h2 class=\"ql-align-center\">بعد أشهر من الانتظار والتشويق...</h2><p>نحن متحمسون جداً للإ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:12:05.829Z",
+    "to": "muaddhtesting@gmail.com",
+    "subject": "🎉 لقد وصلت! مغامرتك تبدأ اليوم! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 اللحظة قد حانت 🌟</h1><p class=\"ql-align-center\">مغامرتك تنتظر. هل أنت مستعد؟</p><h2 class=\"ql-align-center\">بعد أشهر من الانتظار والتشويق...</h2><p>نحن متحمسون جداً للإ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T12:12:08.721Z",
+    "to": "muuaddtesting@gmail.com",
+    "subject": "🎉 لقد وصلت! مغامرتك تبدأ اليوم! 🎉",
+    "type": "newsletter",
+    "content": "<h1 class=\"ql-align-center\">🌟 اللحظة قد حانت 🌟</h1><p class=\"ql-align-center\">مغامرتك تنتظر. هل أنت مستعد؟</p><h2 class=\"ql-align-center\">بعد أشهر من الانتظار والتشويق...</h2><p>نحن متحمسون جداً للإ...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T14:27:39.758Z",
+    "to": "muaddhbody@gmail.com",
+    "subject": "الحياة جميلة",
+    "type": "email",
+    "content": "<p>الحياة جميلة</p>...",
+    "status": "sent"
+  },
+  {
+    "timestamp": "2026-02-01T14:28:46.625Z",
+    "to": "muaddhalsway@gmail.com",
+    "subject": "الحياة جميلة",
+    "type": "email",
+    "content": "<p>الحياة جميلة</p>...",
+    "status": "sent"
   }
 ]

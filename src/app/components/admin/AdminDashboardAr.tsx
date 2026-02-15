@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
-import { Users, Mail, TrendingUp, LogOut, AlertCircle } from 'lucide-react';
+import { Users, Mail, TrendingUp, LogOut, AlertCircle, Settings } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { SubscribersListAr } from './SubscribersListAr';
 import { NewsletterManagerAr } from './NewsletterManagerAr';
 import { DashboardStatsAr } from './DashboardStatsAr';
 import { SendEmailAr } from './SendEmailAr';
+import { AccountSettingsAr } from './AccountSettingsArNew';
 import { apiClient } from '@/utils/api';
 
 interface AdminDashboardArProps {
@@ -20,7 +21,7 @@ interface Stats {
 }
 
 export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter' | 'email'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter' | 'email' | 'account'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,11 +34,28 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
   const loadStats = async () => {
     try {
       setError('');
+      setLoading(true);
       const data = await apiClient.getSubscriberStats();
-      setStats(data);
+      console.log('Stats response:', data);
+      console.log('Stats data:', data.stats);
+      
+      // Ensure monthlyStats is an array
+      const statsData = {
+        totalSubscribers: data.stats?.totalSubscribers || 0,
+        activeSubscribers: data.stats?.activeSubscribers || data.stats?.totalSubscribers || 0,
+        monthlyStats: data.stats?.monthlyStats || [],
+      };
+      console.log('Setting stats:', statsData);
+      setStats(statsData);
     } catch (err: any) {
       console.error('Failed to load stats:', err);
       setError(err.message || 'فشل تحميل الإحصائيات');
+      // Set default stats to prevent crashes
+      setStats({
+        totalSubscribers: 0,
+        activeSubscribers: 0,
+        monthlyStats: [],
+      });
     } finally {
       setLoading(false);
     }
@@ -48,6 +66,7 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
     { id: 'subscribers', label: 'المشتركون', icon: Users },
     { id: 'email', label: 'إرسال بريد', icon: Mail },
     { id: 'newsletter', label: 'النشرات البريدية', icon: Mail },
+    { id: 'account', label: 'الحساب', icon: Settings },
   ];
 
   return (
@@ -84,62 +103,59 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
       )}
 
       {/* Stats Cards */}
-      {!loading && stats && (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="p-6 bg-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-stone-600 mb-1">إجمالي المشتركين</p>
-                  <p className="text-3xl font-bold text-stone-900">{stats.totalSubscribers}</p>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {loading ? (
+            <>
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6 bg-white shadow-lg animate-pulse">
+                  <div className="h-20 bg-stone-200 rounded"></div>
+                </Card>
+              ))}
+            </>
+          ) : stats ? (
+            <>
+              <Card className="p-6 bg-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-stone-600 mb-1">إجمالي المشتركين</p>
+                    <p className="text-3xl font-bold text-stone-900">{stats.totalSubscribers}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-stone-600 mb-1">المشتركون النشطون</p>
-                  <p className="text-3xl font-bold text-stone-900">{stats.activeSubscribers}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-stone-600 mb-1">هذا الشهر</p>
-                  <p className="text-3xl font-bold text-stone-900">
-                    {stats.monthlyStats[stats.monthlyStats.length - 1]?.count || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-amber-600" />
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6 bg-white shadow-lg animate-pulse">
-                <div className="h-20 bg-stone-200 rounded"></div>
               </Card>
-            ))}
-          </div>
+
+              <Card className="p-6 bg-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-stone-600 mb-1">المشتركون النشطون</p>
+                    <p className="text-3xl font-bold text-stone-900">{stats.activeSubscribers}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-stone-600 mb-1">هذا الشهر</p>
+                    <p className="text-3xl font-bold text-stone-900">
+                      {stats.monthlyStats[stats.monthlyStats.length - 1]?.count || 0}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-amber-600" />
+                  </div>
+                </div>
+              </Card>
+            </>
+          ) : null}
         </div>
-      )}
+      </div>
 
       {/* Navigation Tabs */}
       <div className="max-w-7xl mx-auto px-6">
@@ -181,6 +197,10 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
           
           {activeTab === 'newsletter' && (
             <NewsletterManagerAr accessToken={accessToken} />
+          )}
+
+          {activeTab === 'account' && (
+            <AccountSettingsAr accessToken={accessToken} />
           )}
         </div>
       </div>

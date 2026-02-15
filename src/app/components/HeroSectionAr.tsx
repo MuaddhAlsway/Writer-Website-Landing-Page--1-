@@ -18,8 +18,6 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
              
 
 لا تكُن سَبَهْلَلًا <br />
-كتابٌ عن النجاة من العبث، واسترداد المعنى 
-قبل أن يتآكل العمر بلا قصد 
           </h1>
         </motion.div>
         
@@ -30,14 +28,8 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
           className="text-xl md:text-2xl text-stone-600 mb-12 leading-relaxed max-w-2xl mx-auto"
         >
            
-
-هذا الكتابَ ليس مُجلّداً في الوعظ، 
-ولا دليلًا سريعًا للنجاة، 
-ولا وعدًا بتغييرٍ فوريّ 
-
-بل محاولة جادّة 
-لإعادة الإنسان إلى سؤاله الأوّل: 
-من أنا؟ 
+كتابٌ عن النجاة من العبث، واسترداد المعنى 
+قبل أن يتآكل العمر بلا قصد 
         </motion.p>
         
         <motion.div
@@ -52,9 +44,7 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
           >
             انضم للقراء الأوائل
           </Button>
-          <p className="text-sm text-stone-500 mt-4">
-            الإطلاق بعد ٣ أشهر • كن أول من يعرف
-          </p>
+         
         </motion.div>
       </div>
     </section>

@@ -13,9 +13,27 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ stats, onRefresh }: DashboardStatsProps) {
+  // Helper function to safely parse month string
+  const parseMonth = (monthStr: string) => {
+    try {
+      // Handle format "2026-02" -> "2026-02-01"
+      let dateStr = monthStr;
+      if (monthStr.match(/^\d{4}-\d{2}$/)) {
+        dateStr = `${monthStr}-01`;
+      }
+      const date = new Date(dateStr + 'T00:00:00Z');
+      if (isNaN(date.getTime())) {
+        return new Date(); // Fallback to today
+      }
+      return date;
+    } catch {
+      return new Date(); // Fallback to today
+    }
+  };
+
   // Format month data for charts
   const chartData = stats.monthlyStats.map((stat) => ({
-    month: new Date(stat.month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+    month: parseMonth(stat.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
     subscribers: stat.count,
   }));
 
@@ -24,7 +42,7 @@ export function DashboardStats({ stats, onRefresh }: DashboardStatsProps) {
   const cumulativeData = stats.monthlyStats.map((stat) => {
     cumulative += stat.count;
     return {
-      month: new Date(stat.month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      month: parseMonth(stat.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
       total: cumulative,
     };
   });

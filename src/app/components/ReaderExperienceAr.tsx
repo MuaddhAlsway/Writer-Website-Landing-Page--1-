@@ -15,7 +15,7 @@ export function ReaderExperienceAr() {
     },
     {
       icon: Sparkles,
-      title: "كوِّنْ make ",
+      title: "كوِّنْ ",
       description: "ستخرج من أسر التردّد إلى ميدان الفعل،وتتعلّم كيف يُصاغ المعنى بالمبادرة، لا بالتمنّي، وبالعمل المتدرّج لا بالانتظار الطويل"
     },
     {

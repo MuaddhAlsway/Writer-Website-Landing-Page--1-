@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
-import { Users, Mail, TrendingUp, LogOut, AlertCircle } from 'lucide-react';
+import { Users, Mail, TrendingUp, LogOut, AlertCircle, Settings } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { SubscribersList } from './SubscribersList';
 import { NewsletterManager } from './NewsletterManager';
 import { DashboardStats } from './DashboardStats';
+import { AccountSettings } from './AccountSettings';
 import { apiClient } from '@/utils/api';
 
 interface AdminDashboardProps {
@@ -19,7 +20,7 @@ interface Stats {
 }
 
 export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'subscribers' | 'newsletter' | 'account'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +47,7 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
     { id: 'overview', label: 'نظرة عامة', icon: TrendingUp },
     { id: 'subscribers', label: 'المشتركون', icon: Users },
     { id: 'newsletter', label: 'النشرات البريدية', icon: Mail },
+    { id: 'account', label: 'الحساب', icon: Settings },
   ];
 
   return (
@@ -173,12 +175,12 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
             <SubscribersList accessToken={accessToken} onUpdate={loadStats} />
           )}
           
-          {activeTab === 'email' && (
-            <SendEmail accessToken={accessToken} />
-          )}
-          
           {activeTab === 'newsletter' && (
             <NewsletterManager accessToken={accessToken} />
+          )}
+
+          {activeTab === 'account' && (
+            <AccountSettings accessToken={accessToken} />
           )}
         </div>
       </div>
