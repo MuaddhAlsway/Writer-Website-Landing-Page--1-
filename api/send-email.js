@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 
+// Vercel backend - sends emails via Gmail
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
