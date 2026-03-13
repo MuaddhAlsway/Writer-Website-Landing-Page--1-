@@ -16,7 +16,13 @@ export function AuthorSection() {
         >
           <div className="flex flex-col md:flex-row gap-12 items-center">
             <div className="md:w-1/3">
-              <div className="aspect-square rounded-full bg-gradient-to-br from-stone-300 to-amber-200 shadow-2xl" />
+              <div className="w-full max-w-md aspect-square rounded-full overflow-hidden shadow-2xl">
+                <img
+                  src="/AuthurFatima.jpeg"
+                  alt="Fatima Saif Kamil"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
             
             <div className="md:w-2/3 space-y-6">

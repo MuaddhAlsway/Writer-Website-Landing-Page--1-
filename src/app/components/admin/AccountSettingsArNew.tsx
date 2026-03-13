@@ -73,7 +73,7 @@ export function AccountSettingsAr({ accessToken, onLogout }: AccountSettingsArPr
 
   const validatePassword = (password: string) => {
     const errors: string[] = [];
-    if (password.length < 12) errors.push('12 حرف على الأقل');
+    if (password.length < 8) errors.push('8 أحرف على الأقل');
     if (!/[A-Z]/.test(password)) errors.push('حرف كبير');
     if (!/[a-z]/.test(password)) errors.push('حرف صغير');
     if (!/[0-9]/.test(password)) errors.push('رقم');

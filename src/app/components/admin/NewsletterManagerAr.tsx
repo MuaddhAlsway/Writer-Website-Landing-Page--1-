@@ -4,7 +4,7 @@ import 'react-quill/dist/quill.snow.css';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
-import { Send, Plus, Trash2, Mail, Calendar, AlertCircle, CheckCircle, Eye, Image as ImageIcon } from 'lucide-react';
+import { Send, Plus, Trash2, Mail, Calendar, AlertCircle, CheckCircle, Eye } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 import { newsletterTemplatesAr, moreTemplatesAr } from './NewsletterTemplatesAr';
 
@@ -54,7 +54,6 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
   const [error, setError] = useState('');
   const [sending, setSending] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
-  const [featuredImage, setFeaturedImage] = useState<string>('');
 
   useEffect(() => {
     apiClient.setToken(accessToken);
@@ -81,15 +80,9 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
       if (!subject.trim()) throw new Error('الموضوع مطلوب');
       if (!content.trim()) throw new Error('المحتوى مطلوب');
 
-      let htmlContent = content;
-      if (featuredImage) {
-        htmlContent = `<div style="text-align: center; margin-bottom: 20px;"><img src="${featuredImage}" style="max-width: 100%; height: auto; border-radius: 8px;" alt="صورة مميزة"></div>${content}`;
-      }
-
-      await apiClient.createNewsletter(subject, htmlContent, language === 'both' ? '' : language);
+      await apiClient.createNewsletter(subject, content, language === 'both' ? '' : language);
       setSubject('');
       setContent('');
-      setFeaturedImage('');
       setLanguage('both');
       setShowCreateForm(false);
       loadNewsletters();
@@ -101,44 +94,8 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      setError('يجب أن يكون حجم الصورة أقل من 2 ميجابايت');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      setError('يرجى تحميل ملف صورة صحيح');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        if (width > 600) {
-          height = (height * 600) / width;
-          width = 600;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        setFeaturedImage(canvas.toDataURL('image/jpeg', 0.8));
-        setError('');
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
+    // Image upload functionality can be added later if needed
+    return;
   };
 
   const applyTemplate = (templateKey: keyof typeof allTemplates) => {
@@ -157,8 +114,10 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
       action: async () => {
         setSending(id);
         try {
+          // Send the newsletter - the backend will fetch subscribers and return count
           const result = await apiClient.sendNewsletter(id);
           const count = result.count || result.recipientCount || 0;
+          
           setModal({
             type: 'success',
             title: 'تم الإرسال',
@@ -249,34 +208,6 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">صورة مميزة</label>
-              <div className="flex gap-3 items-start">
-                <label className="flex-1 flex items-center justify-center px-4 py-6 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-stone-400 transition bg-stone-50">
-                  <div className="text-center">
-                    <ImageIcon className="w-8 h-8 mx-auto mb-2 text-stone-400" />
-                    <span className="text-sm text-stone-600 block">انقر لتحميل الصورة</span>
-                    <span className="text-xs text-stone-500 block mt-1">الحد الأقصى 2 ميجابايت</span>
-                  </div>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-                {featuredImage && (
-                  <div className="relative">
-                    <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-stone-200">
-                      <img src={featuredImage} alt="مميزة" className="w-full h-full object-cover" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setFeaturedImage('')}
-                      className="absolute -top-3 -left-3 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-stone-700 mb-2">اللغة المستهدفة</label>
               <select
                 value={language}
@@ -309,11 +240,7 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                 type="button"
                 onClick={() => {
                   if (content.trim()) {
-                    let previewContent = content;
-                    if (featuredImage) {
-                      previewContent = `<div style="text-align: center; margin-bottom: 20px;"><img src="${featuredImage}" style="max-width: 100%; height: auto; border-radius: 8px;" alt="صورة مميزة"></div>${content}`;
-                    }
-                    setModal({ type: 'preview', title: 'معاينة', message: '', content: previewContent });
+                    setModal({ type: 'preview', title: 'معاينة', message: '', content: content });
                   }
                 }}
                 variant="outline"
@@ -327,7 +254,6 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                   setShowCreateForm(false);
                   setSubject('');
                   setContent('');
-                  setFeaturedImage('');
                 }}
                 variant="outline"
               >
@@ -347,7 +273,14 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                   <div className="flex gap-4 text-sm text-stone-600 mb-3 flex-wrap">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(newsletter.createdAt).toLocaleDateString('ar-SA')}
+                      {newsletter.createdAt ? (() => {
+                        try {
+                          const date = new Date(newsletter.createdAt);
+                          return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('ar-SA');
+                        } catch {
+                          return 'N/A';
+                        }
+                      })() : 'N/A'}
                     </span>
                     {newsletter.language && (
                       <span className={`px-2 py-1 rounded-full text-xs ${
@@ -367,7 +300,14 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                     <div className="text-sm">
                       <span className="text-green-600 font-medium">✓ تم الإرسال</span>
                       <span className="text-stone-600 ml-2">
-                        إلى {newsletter.recipientCount} مستقبل في {new Date(newsletter.sentAt).toLocaleDateString('ar-SA')}
+                        إلى {newsletter.recipientCount} مستقبل في {(() => {
+                          try {
+                            const date = new Date(newsletter.sentAt);
+                            return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('ar-SA');
+                          } catch {
+                            return 'N/A';
+                          }
+                        })()}
                       </span>
                     </div>
                   ) : (

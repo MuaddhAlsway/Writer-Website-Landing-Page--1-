@@ -33,8 +33,8 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
         throw new Error('يرجى إدخال عنوان بريد إلكتروني صحيح');
       }
 
-      if (password.length < 12) {
-        throw new Error('يجب أن تكون كلمة المرور 12 حرف على الأقل');
+      if (password.length < 8) {
+        throw new Error('يجب أن تكون كلمة المرور 8 أحرف على الأقل');
       }
 
       // Call backend login endpoint

@@ -74,7 +74,7 @@ export function AccountSettings({ accessToken, onLogout }: AccountSettingsProps)
 
   const validatePassword = (password: string) => {
     const errors: string[] = [];
-    if (password.length < 12) errors.push('At least 12 characters');
+    if (password.length < 8) errors.push('At least 8 characters');
     if (!/[A-Z]/.test(password)) errors.push('Uppercase letter');
     if (!/[a-z]/.test(password)) errors.push('Lowercase letter');
     if (!/[0-9]/.test(password)) errors.push('Number');

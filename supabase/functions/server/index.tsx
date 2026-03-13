@@ -308,29 +308,13 @@ app.delete("/make-server-53bed28f/newsletters/:id", verifyAdmin, async (c) => {
 // ============= EMAIL SENDING ROUTE =============
 
 // Send individual email (admin only)
+// DISABLED - Email sending moved to Node.js backend server
+// Cloudflare Functions cannot open TCP connections to SMTP servers
 app.post("/make-server-53bed28f/send-email", verifyAdmin, async (c) => {
-  try {
-    const { recipients, subject, content } = await c.req.json();
-    
-    if (!recipients || !subject || !content) {
-      return c.json({ error: 'Recipients, subject, and content are required' }, 400);
-    }
-
-    // In a real application, integrate with email service
-    console.log(`Sending email "${subject}" to ${recipients.length} recipients`);
-    recipients.forEach((email: string) => {
-      console.log(`  → ${email}`);
-    });
-
-    return c.json({ 
-      success: true, 
-      recipientCount: recipients.length,
-      message: 'Email sent successfully (simulated - integrate email service for production)'
-    });
-  } catch (error) {
-    console.error('Send email error:', error);
-    return c.json({ error: 'Failed to send email' }, 500);
-  }
+  return c.json({ 
+    error: 'Email sending disabled in Supabase Functions. Use backend server instead.',
+    details: 'Email sending must occur in Node.js backend with Nodemailer'
+  }, 503);
 });
 
 Deno.serve(app.fetch);

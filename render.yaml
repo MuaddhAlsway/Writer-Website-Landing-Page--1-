@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: author-fatima-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node backend-server.mjs
+    envVars:
+      - key: EMAIL_USER
+        value: AuthorFSK@gmail.com
+      - key: EMAIL_PASSWORD
+        value: peed qvhs ekmo kisv
+      - key: NODE_ENV
+        value: production

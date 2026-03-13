@@ -67,6 +67,8 @@ export default function App() {
     localStorage.setItem('admin_access_token', token);
     localStorage.setItem('admin_refresh_token', refreshToken);
     localStorage.setItem('admin_token_expiry', expiryTime.toString());
+    // Redirect to admin dashboard
+    window.location.href = '/admin';
   };
 
   const handleLogout = () => {
@@ -99,7 +101,7 @@ export default function App() {
     <div className="min-h-screen bg-stone-50">
       <>
         <HeroSectionAr onJoinClick={scrollToEmailSection} />
-        <BookStoryAr />
+        
         <ReaderExperienceAr />
         <AuthorSectionAr />
         <BookTeaserAr />

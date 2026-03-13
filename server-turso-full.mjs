@@ -719,7 +719,18 @@ app.get('/make-server-53bed28f/subscribers/stats', async (req, res) => {
 // Get Newsletters
 app.get('/make-server-53bed28f/newsletters', async (req, res) => {
   try {
-    const result = await db.execute('SELECT * FROM newsletters ORDER BY created_at DESC');
+    const result = await db.execute(`
+      SELECT 
+        id, 
+        title, 
+        content, 
+        language, 
+        status,
+        created_at as createdAt,
+        sent_at as sentAt
+      FROM newsletters 
+      ORDER BY created_at DESC
+    `);
     res.json({ success: true, newsletters: result.rows });
   } catch (err) {
     console.error('Get newsletters error:', err);
@@ -737,10 +748,11 @@ app.post('/make-server-53bed28f/newsletters', async (req, res) => {
     }
 
     const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
     await db.execute({
-      sql: 'INSERT INTO newsletters (id, title, content, language) VALUES (?, ?, ?, ?)',
-      args: [id, title, content, language || 'en'],
+      sql: 'INSERT INTO newsletters (id, title, content, language, created_at) VALUES (?, ?, ?, ?, ?)',
+      args: [id, title, content, language || 'en', now],
     });
 
     res.json({ success: true, message: 'Newsletter created', id });
@@ -756,7 +768,18 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
     const { id } = req.params;
 
     const result = await db.execute({
-      sql: 'SELECT * FROM newsletters WHERE id = ?',
+      sql: `
+        SELECT 
+          id, 
+          title, 
+          content, 
+          language, 
+          status,
+          created_at as createdAt,
+          sent_at as sentAt
+        FROM newsletters 
+        WHERE id = ?
+      `,
       args: [id],
     });
 
@@ -772,6 +795,13 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
       return res.json({ success: true, message: 'No subscribers to send to' });
     }
 
+    // Process content - handle both plain text and HTML
+    let processedContent = newsletter.content;
+    if (!newsletter.content.includes('<')) {
+      // Plain text - convert to paragraphs
+      processedContent = newsletter.content.split('\n').map(line => line.trim() ? `<p style="margin: 10px 0; line-height: 1.6; color: #333;">${line}</p>` : '').join('');
+    }
+
     // Newsletter template (Arabic)
     const newsletterTemplate = `
       <!DOCTYPE html>
@@ -782,6 +812,7 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
         <title>${newsletter.title}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { width: 100%; }
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; min-height: 100vh; direction: rtl; }
           .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); }
           .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 40px 20px; text-align: center; color: white; }
@@ -791,8 +822,11 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
           .content { padding: 40px 30px; text-align: right; }
           .newsletter-badge { display: inline-block; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px; text-align: center; width: 100%; }
           .newsletter-title { color: #f5576c; font-size: 28px; margin-bottom: 20px; font-weight: 700; border-bottom: 3px solid #f093fb; padding-bottom: 15px; }
-          .newsletter-content { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 25px; }
-          .newsletter-content p { margin-bottom: 15px; }
+          .newsletter-content { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 25px; word-wrap: break-word; overflow-wrap: break-word; }
+          .newsletter-content p { margin-bottom: 15px; color: #333; }
+          .newsletter-content img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 8px; }
+          .image-container { margin: 20px 0; text-align: center; width: 100%; clear: both; }
+          .image-container img { max-width: 100%; width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
           .featured-box { background: linear-gradient(135deg, #fff5f7 0%, #ffe5eb 100%); border-right: 4px solid #f5576c; padding: 20px; margin: 25px 0; border-radius: 8px; text-align: right; }
           .featured-box h3 { color: #f5576c; margin-bottom: 10px; }
           .featured-box p { color: #555; font-size: 14px; line-height: 1.6; }
@@ -818,7 +852,7 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
             <div class="newsletter-badge">📬 النشرة الإخبارية الأسبوعية</div>
             <div class="newsletter-title">${newsletter.title}</div>
             <div class="newsletter-content">
-              ${newsletter.content.split('\\n').map(line => line.trim() ? '<p>' + line + '</p>' : '').join('')}
+              ${processedContent}
             </div>
             <div class="featured-box">
               <h3>✨ ملخص هذا الأسبوع</h3>
@@ -858,8 +892,32 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
       args: ['sent', id],
     });
 
+    // Fetch updated newsletter
+    const updatedResult = await db.execute({
+      sql: `
+        SELECT 
+          id, 
+          title, 
+          content, 
+          language, 
+          status,
+          created_at as createdAt,
+          sent_at as sentAt
+        FROM newsletters 
+        WHERE id = ?
+      `,
+      args: [id],
+    });
+
+    const updatedNewsletter = updatedResult.rows[0];
+
     console.log(`[NEWSLETTER] Newsletter sent to ${subscribers.length} subscribers`);
-    res.json({ success: true, message: 'Newsletter sent', count: subscribers.length });
+    res.json({ 
+      success: true, 
+      message: 'Newsletter sent', 
+      count: subscribers.length,
+      newsletter: updatedNewsletter
+    });
   } catch (err) {
     console.error('Send newsletter error:', err);
     res.status(500).json({ error: 'Failed to send newsletter' });
@@ -886,10 +944,29 @@ app.delete('/make-server-53bed28f/newsletters/:id', async (req, res) => {
 // Send Email
 app.post('/make-server-53bed28f/send-email', async (req, res) => {
   try {
-    const { recipients, subject, content } = req.body;
+    const { recipients, subject, content, image, language = 'ar' } = req.body;
 
     if (!recipients || !subject || !content) {
       return res.status(400).json({ error: 'Recipients, subject, and content required' });
+    }
+
+    // Build image HTML - use base64 directly (Gmail supports this)
+    let imageHtml = '';
+    
+    if (image) {
+      // Use image directly as base64 or URL
+      imageHtml = `
+        <div style="margin: 20px 0; text-align: center; width: 100%; clear: both;">
+          <img src="${image}" alt="Email Image" style="max-width: 100%; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: block; margin: 0 auto;">
+        </div>
+      `;
+    }
+
+    // Process content - handle both plain text and HTML
+    let processedContent = content;
+    if (!content.includes('<')) {
+      // Plain text - convert to paragraphs
+      processedContent = content.split('\n').map(line => line.trim() ? `<p style="margin: 10px 0; line-height: 1.6; color: #333;">${line}</p>` : '').join('');
     }
 
     // Gmail template (Arabic)
@@ -902,6 +979,7 @@ app.post('/make-server-53bed28f/send-email', async (req, res) => {
         <title>${subject}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { width: 100%; }
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; min-height: 100vh; direction: rtl; }
           .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); }
           .header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 35px 20px; text-align: center; color: white; border-bottom: 4px solid #ea4335; }
@@ -910,8 +988,11 @@ app.post('/make-server-53bed28f/send-email', async (req, res) => {
           .header p { font-size: 14px; opacity: 0.9; }
           .content { padding: 35px 30px; text-align: right; }
           .message-title { color: #1e3c72; font-size: 22px; margin-bottom: 20px; font-weight: 600; border-bottom: 2px solid #ea4335; padding-bottom: 12px; }
-          .message-body { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
-          .message-body p { margin-bottom: 15px; }
+          .message-body { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 20px; word-wrap: break-word; overflow-wrap: break-word; }
+          .message-body p { margin-bottom: 15px; color: #333; }
+          .message-body img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 8px; }
+          .image-container { margin: 20px 0; text-align: center; width: 100%; clear: both; }
+          .image-container img { max-width: 100%; width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
           .highlight-box { background: #f0f4ff; border-right: 4px solid #ea4335; padding: 20px; margin: 20px 0; border-radius: 6px; text-align: right; }
           .highlight-box p { color: #1e3c72; font-weight: 500; }
           .cta-button { display: inline-block; background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; margin: 20px 0; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(234, 67, 53, 0.4); }
@@ -938,8 +1019,9 @@ app.post('/make-server-53bed28f/send-email', async (req, res) => {
               <span class="gmail-badge">📬 رسالة Gmail</span>
             </div>
             <div class="message-title">${subject}</div>
+            ${imageHtml}
             <div class="message-body">
-              ${content.split('\\n').map(line => line.trim() ? '<p>' + line + '</p>' : '').join('')}
+              ${processedContent}
             </div>
             <div class="highlight-box">
               <p>شكراً لك على كونك جزءاً من مجتمعنا!</p>

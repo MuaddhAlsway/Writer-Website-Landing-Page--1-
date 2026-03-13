@@ -40,11 +40,23 @@ export function HeroSectionAr({ onJoinClick }: HeroSectionArProps) {
           <Button
             onClick={onJoinClick}
             size="lg"
-            className="bg-stone-800 hover:bg-stone-900 text-white px-10 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+            className="bg-stone-800 hover:bg-stone-900 text-white px-10 py-6 text-lg rounded-full transition-all duration-300"
           >
             انضم للقراء الأوائل
           </Button>
-         
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+          className="mt-16"
+        >
+          <img
+            src="/book3d.png"
+            alt="موكب"
+            className="w-full max-w-2xl mx-auto rounded-lg "
+          />
         </motion.div>
       </div>
     </section>

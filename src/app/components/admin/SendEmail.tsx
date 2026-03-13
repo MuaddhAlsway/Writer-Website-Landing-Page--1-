@@ -3,7 +3,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Upload, X } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 
 interface SendEmailProps {
@@ -21,6 +21,8 @@ export function SendEmail({ accessToken }: SendEmailProps) {
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [filterLang, setFilterLang] = useState<'all' | 'en' | 'ar'>('all');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -62,6 +64,34 @@ export function SendEmail({ accessToken }: SendEmailProps) {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -85,13 +115,33 @@ export function SendEmail({ accessToken }: SendEmailProps) {
     setError('');
 
     try {
+      // Detect language from selected subscribers
+      const selectedSubscribers = subscribers.filter(s => selectedEmails.includes(s.email));
+      const language = selectedSubscribers.length > 0 ? selectedSubscribers[0].language : 'en';
+
+      // Prepare email data with image if present
+      const emailData: any = {
+        recipients: selectedEmails,
+        subject,
+        content,
+        language,
+      };
+
+      if (imagePreview) {
+        // Use the preview (data URL) - Gmail will handle it better than base64
+        emailData.image = imagePreview;
+        emailData.imageName = imageFile?.name || 'image.jpg';
+      }
+
       // Send email via backend API
-      const data = await apiClient.sendEmail(selectedEmails, subject, content);
+      const data = await apiClient.sendEmail(selectedEmails, subject, content, emailData.image, language);
 
       setSuccess(true);
       setSubject('');
       setContent('');
       setSelectedEmails([]);
+      setImageFile(null);
+      setImagePreview('');
 
       setTimeout(() => setSuccess(false), 5000);
     } catch (err: any) {
@@ -162,6 +212,42 @@ export function SendEmail({ accessToken }: SendEmailProps) {
               placeholder="Write your email message here..."
               className="w-full min-h-[300px]"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              Attach Image (Optional)
+            </label>
+            {imagePreview ? (
+              <div className="relative mb-4">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full h-48 object-cover rounded-lg border border-stone-200"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center w-full p-6 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-stone-400 transition-colors">
+                <div className="flex flex-col items-center">
+                  <Upload className="w-6 h-6 text-stone-400 mb-2" />
+                  <span className="text-sm text-stone-600">Click to upload image</span>
+                  <span className="text-xs text-stone-500">PNG, JPG, GIF up to 5MB</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
 
           <Button

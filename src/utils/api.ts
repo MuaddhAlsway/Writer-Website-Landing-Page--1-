@@ -4,7 +4,15 @@ const getApiBase = () => {
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:3001';
   }
-  // In production, use relative paths for Cloudflare Pages
+  
+  // In production, use backend server for email sending
+  // This allows us to use Gmail app password via Nodemailer
+  if (typeof window !== 'undefined') {
+    const backendUrl = (window as any).__BACKEND_URL__ || 'http://localhost:3001';
+    return backendUrl;
+  }
+  
+  // Fallback to relative paths for Cloudflare Pages
   return '';
 };
 
@@ -220,10 +228,16 @@ class ApiClient {
   }
 
   // Email
-  async sendEmail(recipients: string[], subject: string, content: string) {
-    return this.request('/make-server-53bed28f/send-email', {
+  async sendEmail(recipients: string[], subject: string, content: string, image?: string, language: string = 'en') {
+    return this.request('/api/send-email', {
       method: 'POST',
-      body: JSON.stringify({ recipients, subject, content }),
+      body: JSON.stringify({ 
+        recipients, 
+        subject, 
+        message: content,  // Backend expects 'message' not 'content'
+        image, 
+        language 
+      }),
     });
   }
 

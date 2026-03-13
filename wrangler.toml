@@ -1,5 +1,6 @@
-name = "author-fatima"
+name = "author-fatima-76r"
 compatibility_date = "2024-12-18"
+compatibility_flags = ["nodejs_compat"]
 
 # Cloudflare Pages Configuration
 pages_build_output_dir = "dist"
@@ -7,9 +8,12 @@ pages_build_output_dir = "dist"
 # Environment variables
 [vars]
 ENVIRONMENT = "production"
-EMAIL_SERVICE = "gmail"
-EMAIL_USER = "muaddhalsway@gmail.com"
-EMAIL_FROM = "muaddhalsway@gmail.com"
+ADMIN_EMAIL = "admin@authorfatima.com"
+ADMIN_NAME = "Admin"
+TURSO_CONNECTION_URL = "libsql://authorfsk-authorfsk.aws-ap-northeast-1.turso.io"
+TURSO_AUTH_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzAxOTUxNDYsImlkIjoiMmQ5YTVhMDUtYzMyOS00OGZlLWFhY2MtNTVlYzdiY2Q5YzQyIiwicmlkIjoiZmI2M2I1ZjEtZTgwNi00YjFjLTkzMjMtZDVlMTgwZDZkNDhjIn0.4tqUGYj5USB1UQtj1H9gS2pHfi0u78wIDBMNEGpHUTVz60prPnt1-36Suw5LOYxujUToCnPhvnKATFzVFYQNAA"
+# Backend email server URL - Deploy to Railway and update this
+BACKEND_URL = "https://email-server-production.up.railway.app"
 
 # Production environment
 [env.production]
@@ -18,8 +22,16 @@ name = "author-fatima-prod"
 [env.production.vars]
 ENVIRONMENT = "production"
 EMAIL_SERVICE = "gmail"
-EMAIL_USER = "muaddhalsway@gmail.com"
-EMAIL_FROM = "muaddhalsway@gmail.com"
+EMAIL_USER = "AuthorFSK@gmail.com"
+EMAIL_FROM = "AuthorFSK@gmail.com"
+EMAIL_PASSWORD = "peed qvhs ekmo kisv"
+ADMIN_EMAIL = "admin@authorfatima.com"
+ADMIN_NAME = "Admin"
+TURSO_CONNECTION_URL = "libsql://authorfsk-authorfsk.aws-ap-northeast-1.turso.io"
+
+# Secrets (add via wrangler secret put)
+# TURSO_AUTH_TOKEN
+# EMAIL_PASSWORD
 
 # D1 Database binding
 [[d1_databases]]
