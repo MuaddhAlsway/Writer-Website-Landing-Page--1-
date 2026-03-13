@@ -17,6 +17,7 @@ GMAIL_USER = "AuthorFSK@gmail.com"
 GMAIL_APP_PASSWORD = "peed qvhs ekmo kisv"
 # Backend email server URL - Vercel
 BACKEND_URL = "https://writer-website-landing-page-1.vercel.app/api"
+VITE_BACKEND_URL = "https://writer-website-landing-page-1.vercel.app/api"
 
 # Production environment
 [env.production]

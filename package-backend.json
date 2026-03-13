@@ -1,12 +1,12 @@
 {
-  "name": "email-server",
+  "name": "author-fatima-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Email server for Gmail SMTP",
-  "main": "server-standalone.mjs",
+  "description": "Backend API for Author Fatima newsletter",
+  "main": "server.mjs",
   "scripts": {
-    "start": "node server-standalone.mjs",
-    "dev": "node server-standalone.mjs"
+    "start": "node server.mjs",
+    "dev": "node --require dotenv/config server.mjs"
   },
   "dependencies": {
     "express": "4.18.2",

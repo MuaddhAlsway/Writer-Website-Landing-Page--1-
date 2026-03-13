@@ -215,18 +215,34 @@ class ApiClient {
     });
   }
 
-  // Email
+  // Email - Send via backend API
   async sendEmail(recipients: string[], subject: string, content: string, image?: string, language: string = 'en') {
-    return this.request('/api/send-email', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        recipients, 
-        subject, 
-        message: content,
-        image, 
-        language 
-      }),
-    });
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    
+    try {
+      const response = await fetch(`${backendUrl}/make-server-53bed28f/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          recipients, 
+          subject, 
+          content,
+          language 
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Backend error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      console.error('Backend email send error:', err);
+      throw err;
+    }
   }
 
   // Admin Authentication
