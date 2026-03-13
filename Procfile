@@ -1,1 +1,1 @@
-web: node server/emailServer.mjs
+web: node server-standalone.mjs

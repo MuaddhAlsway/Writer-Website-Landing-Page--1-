@@ -5,7 +5,7 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "node server/emailServer.mjs",
+    "startCommand": "node server-standalone.mjs",
     "restartPolicyMaxRetries": 5
   }
 }
