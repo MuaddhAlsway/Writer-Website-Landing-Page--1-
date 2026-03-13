@@ -1,0 +1,125 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/admin/login",
+      "mountPath": "/api/admin",
+      "method": "POST",
+      "module": [
+        "api/admin/login.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/newsletters/send",
+      "mountPath": "/api/newsletters",
+      "method": "POST",
+      "module": [
+        "api/newsletters/send.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/admin/forgot-password",
+      "mountPath": "/api/admin",
+      "method": "",
+      "module": [
+        "api/admin/forgot-password.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/admin/profile",
+      "mountPath": "/api/admin",
+      "method": "",
+      "module": [
+        "api/admin/profile.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/admin/reset-password",
+      "mountPath": "/api/admin",
+      "method": "",
+      "module": [
+        "api/admin/reset-password.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/newsletters",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/newsletters.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/newsletters",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/newsletters.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/send-email",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/send-email.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/stats",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/stats.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/subscribers",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/subscribers.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/subscribers",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/subscribers.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/send-email-worker",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/send-email-worker.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/:route*",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/[[route]].ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/make-server-53bed28f/:route*",
+      "mountPath": "/make-server-53bed28f",
+      "method": "",
+      "module": [
+        "make-server-53bed28f/[[route]].ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/:route*",
+      "mountPath": "/",
+      "method": "",
+      "module": [
+        "[[route]].ts:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
