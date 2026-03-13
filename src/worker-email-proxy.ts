@@ -40,7 +40,6 @@ export async function onRequestPost(context: any): Promise<Response> {
     const backendUrl = context.env.BACKEND_URL;
 
     if (!backendUrl) {
-      console.error('[WORKER] BACKEND_URL not configured in wrangler.toml');
       return new Response(
         JSON.stringify({
           success: false,
@@ -53,7 +52,6 @@ export async function onRequestPost(context: any): Promise<Response> {
       );
     }
 
-    // Parse request body
     let body: EmailRequest;
     try {
       body = await context.request.json();
@@ -70,7 +68,6 @@ export async function onRequestPost(context: any): Promise<Response> {
       );
     }
 
-    // Validate request
     if (!body.recipients || !Array.isArray(body.recipients)) {
       return new Response(
         JSON.stringify({
@@ -97,11 +94,9 @@ export async function onRequestPost(context: any): Promise<Response> {
       );
     }
 
-    console.log(`[WORKER] Proxying email request to ${backendUrl}`);
+    console.log(`[WORKER] Proxying email request to ${backendUrl}/send-email`);
     console.log(`[WORKER] Recipients: ${body.recipients.length}`);
-    console.log(`[WORKER] Subject: ${body.subject}`);
 
-    // Proxy request to backend server
     const backendResponse = await fetch(`${backendUrl}/send-email`, {
       method: 'POST',
       headers: {
@@ -110,13 +105,10 @@ export async function onRequestPost(context: any): Promise<Response> {
       body: JSON.stringify(body),
     });
 
-    // Parse backend response
     const responseData: EmailResponse = await backendResponse.json();
 
     console.log(`[WORKER] Backend response status: ${backendResponse.status}`);
-    console.log(`[WORKER] Backend response:`, responseData);
 
-    // Return backend response to client
     return new Response(JSON.stringify(responseData), {
       status: backendResponse.status,
       headers: {

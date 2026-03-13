@@ -1,105 +1,61 @@
-import nodemailer from 'nodemailer';
-
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
-// Initialize Nodemailer transporter
-const getTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-  });
-};
-
-export const onRequest: PagesFunction = async (context) => {
-  // Handle OPTIONS requests
-  if (context.request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  }
-
-  if (context.request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: corsHeaders,
-    });
-  }
-
+export async function onRequestPost(context: any) {
   try {
-    const { recipients, subject, content, image, language = 'en' } = await context.request.json();
+    const { recipients, subject, message } = await context.request.json();
 
-    if (!recipients || !subject || !content) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: corsHeaders,
-      });
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Recipients required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      return new Response(JSON.stringify({ error: 'Email service not configured' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+    if (!subject || !message) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Subject and message required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    const transporter = getTransporter();
-    const results = [];
-    let sentCount = 0;
-
-    // Send emails to each recipient
-    for (const recipient of recipients) {
-      try {
-        const mailOptions = {
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          to: recipient,
-          subject: subject,
-          html: content,
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${recipient}:`, info.response);
-        results.push({
-          email: recipient,
-          success: true,
-          messageId: info.messageId,
-        });
-        sentCount++;
-      } catch (err: any) {
-        console.error(`Failed to send email to ${recipient}:`, err.message);
-        results.push({
-          email: recipient,
-          success: false,
-          error: err.message,
-        });
-      }
+    // Call Vercel backend for real email sending
+    const backendUrl = context.env.BACKEND_URL;
+    
+    if (!backendUrl) {
+      console.error('[EMAIL] Backend URL not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email service not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    const failureCount = results.filter(r => !r.success).length;
+    console.log(`[EMAIL] Proxying to backend: ${backendUrl}/send-email`);
+    console.log(`[EMAIL] Recipients: ${recipients.length}`);
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Sent to ${sentCount} recipients, ${failureCount} failed`,
-      count: sentCount,
-      recipientCount: sentCount,
-      results: results,
-    }), {
-      status: 200,
-      headers: corsHeaders,
+    // Call Vercel backend
+    const backendResponse = await fetch(`${backendUrl}/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        recipients,
+        subject,
+        message,
+      }),
     });
-  } catch (err: any) {
-    console.error('Send email error:', err);
-    return new Response(JSON.stringify({ error: 'Failed to send email', details: err.message }), {
-      status: 500,
-      headers: corsHeaders,
-    });
+
+    const result = await backendResponse.json();
+
+    console.log(`[EMAIL] Backend response:`, result);
+
+    return new Response(
+      JSON.stringify(result),
+      { status: backendResponse.status, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error: any) {
+    console.error('[EMAIL] Error:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message || 'Failed to send email' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-};
+}

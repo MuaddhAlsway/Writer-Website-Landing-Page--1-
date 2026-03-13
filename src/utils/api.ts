@@ -1,18 +1,6 @@
 // Detect environment and set API base URL
 const getApiBase = () => {
-  // In development, use direct backend URL
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:3001';
-  }
-  
-  // In production, use backend server for email sending
-  // This allows us to use Gmail app password via Nodemailer
-  if (typeof window !== 'undefined') {
-    const backendUrl = (window as any).__BACKEND_URL__ || 'http://localhost:3001';
-    return backendUrl;
-  }
-  
-  // Fallback to relative paths for Cloudflare Pages
+  // Always use relative paths - Cloudflare Pages functions handle routing
   return '';
 };
 
@@ -176,18 +164,18 @@ class ApiClient {
 
   // Subscribers
   async addSubscriber(email: string, language: string = 'en') {
-    return this.request('/make-server-53bed28f/subscribers', {
+    return this.request('/api/subscribers', {
       method: 'POST',
       body: JSON.stringify({ email, language }),
     });
   }
 
   async getSubscribers() {
-    return this.request('/make-server-53bed28f/subscribers');
+    return this.request('/api/subscribers');
   }
 
   async getSubscriberStats() {
-    return this.request('/make-server-53bed28f/subscribers/stats');
+    return this.request('/api/stats');
   }
 
   async deleteSubscriber(email: string) {
@@ -198,20 +186,20 @@ class ApiClient {
 
   // Newsletters
   async createNewsletter(title: string, content: string, language: string = 'en') {
-    return this.request('/make-server-53bed28f/newsletters', {
+    return this.request('/api/newsletters', {
       method: 'POST',
-      body: JSON.stringify({ title, content, language }),
+      body: JSON.stringify({ subject: title, content, language }),
     });
   }
 
   async getNewsletters() {
-    return this.request('/make-server-53bed28f/newsletters');
+    return this.request('/api/newsletters');
   }
 
-  async sendNewsletter(id: string) {
-    return this.request(`/make-server-53bed28f/newsletters/${id}/send`, {
+  async sendNewsletter(id: string, recipients?: string[]) {
+    return this.request(`/api/newsletters/${id}/send`, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ recipients: recipients || [] }),
     });
   }
 
@@ -222,7 +210,7 @@ class ApiClient {
   }
 
   async deleteNewsletter(id: string) {
-    return this.request(`/make-server-53bed28f/newsletters/${id}`, {
+    return this.request(`/api/newsletters/${id}`, {
       method: 'DELETE',
     });
   }
@@ -234,7 +222,7 @@ class ApiClient {
       body: JSON.stringify({ 
         recipients, 
         subject, 
-        message: content,  // Backend expects 'message' not 'content'
+        message: content,
         image, 
         language 
       }),
