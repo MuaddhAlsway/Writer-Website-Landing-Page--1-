@@ -14,6 +14,63 @@ app.use(cors({
 
 app.use(express.json());
 
+// Newsletter HTML template
+const getNewsletterTemplate = (subject, content, language = 'en') => {
+  const isArabic = language === 'ar';
+  const direction = isArabic ? 'rtl' : 'ltr';
+  const textAlign = isArabic ? 'right' : 'left';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="${isArabic ? 'ar' : 'en'}" dir="${direction}">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; direction: ${direction}; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 50px 30px; text-align: center; color: white; }
+        .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 10px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .content { padding: 40px 30px; text-align: ${textAlign}; line-height: 1.8; }
+        .content h2 { color: #333; font-size: 24px; margin-bottom: 20px; font-weight: 600; }
+        .content p { color: #555; font-size: 15px; margin-bottom: 15px; line-height: 1.8; }
+        .content ul, .content ol { margin: 20px 0; padding-${isArabic ? 'right' : 'left'}: 20px; }
+        .content li { margin-bottom: 10px; font-size: 15px; color: #555; }
+        .content a { color: #667eea; text-decoration: none; font-weight: 600; }
+        .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        .divider { height: 1px; background: #e0e0e0; margin: 30px 0; }
+        .footer { background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0; }
+        .footer-text { color: #888; font-size: 13px; margin: 10px 0; }
+        .highlight { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; border-radius: 4px; }
+        @media (max-width: 600px) {
+          .header { padding: 30px 20px; }
+          .header h1 { font-size: 24px; }
+          .content { padding: 25px 20px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>${subject}</h1>
+          <p>${isArabic ? 'رسالة إخبارية حصرية' : 'Exclusive Newsletter'}</p>
+        </div>
+        <div class="content">
+          ${content}
+        </div>
+        <div class="footer">
+          <p class="footer-text">${isArabic ? '© 2026 جميع الحقوق محفوظة' : '© 2026 All rights reserved'}</p>
+          <p class="footer-text">${isArabic ? 'تم إرسال هذه الرسالة إليك لأنك مشترك في نشرتنا البريدية' : 'You received this email because you subscribed to our newsletter'}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 // Setup Nodemailer with Gmail
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -156,40 +213,7 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
 
     for (const recipient of recipientList) {
       try {
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html lang="${recipient.language === 'ar' ? 'ar' : 'en'}" dir="${recipient.language === 'ar' ? 'rtl' : 'ltr'}">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${newsletter.subject}</title>
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; direction: ${recipient.language === 'ar' ? 'rtl' : 'ltr'}; }
-              .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
-              .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-              .content { padding: 40px 30px; text-align: ${recipient.language === 'ar' ? 'right' : 'left'}; }
-              .content p { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 15px; }
-              .footer { background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0; }
-              .footer-text { color: #666; font-size: 13px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>${newsletter.subject}</h1>
-              </div>
-              <div class="content">
-                ${newsletter.content}
-              </div>
-              <div class="footer">
-                <p class="footer-text">${recipient.language === 'ar' ? '© 2026 جميع الحقوق محفوظة' : '© 2026 All rights reserved'}</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
+        const htmlContent = getNewsletterTemplate(newsletter.subject, newsletter.content, recipient.language);
 
         const mailOptions = {
           from: process.env.EMAIL_USER,
