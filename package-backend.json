@@ -1,0 +1,17 @@
+{
+  "name": "email-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Email server for Gmail SMTP",
+  "main": "server-standalone.mjs",
+  "scripts": {
+    "start": "node server-standalone.mjs",
+    "dev": "node server-standalone.mjs"
+  },
+  "dependencies": {
+    "express": "4.18.2",
+    "cors": "2.8.5",
+    "nodemailer": "^7.0.12",
+    "dotenv": "^17.2.3"
+  }
+}
