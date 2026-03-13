@@ -1,13 +1,15 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "env": {
-    "GMAIL_USER": "@gmail_user",
-    "GMAIL_APP_PASSWORD": "@gmail_app_password"
-  },
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
 }
