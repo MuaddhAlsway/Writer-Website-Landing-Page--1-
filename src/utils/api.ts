@@ -217,10 +217,10 @@ class ApiClient {
 
   // Email - Send via backend API
   async sendEmail(recipients: string[], subject: string, content: string, image?: string, language: string = 'en') {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
     
     try {
-      const response = await fetch(`${backendUrl}/make-server-53bed28f/send-email`, {
+      const response = await fetch(`${backendUrl}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
