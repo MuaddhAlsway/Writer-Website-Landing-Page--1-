@@ -186,21 +186,47 @@ class ApiClient {
 
   // Newsletters
   async createNewsletter(title: string, content: string, language: string = 'en') {
-    return this.request('/api/newsletters', {
-      method: 'POST',
-      body: JSON.stringify({ subject: title, content, language }),
-    });
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    try {
+      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: title, content, language }),
+      });
+      if (!response.ok) throw new Error('Failed to create newsletter');
+      return await response.json();
+    } catch (err) {
+      console.error('Create newsletter error:', err);
+      throw err;
+    }
   }
 
   async getNewsletters() {
-    return this.request('/api/newsletters');
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    try {
+      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters`);
+      if (!response.ok) throw new Error('Failed to get newsletters');
+      return await response.json();
+    } catch (err) {
+      console.error('Get newsletters error:', err);
+      throw err;
+    }
   }
 
   async sendNewsletter(id: string, recipients?: string[]) {
-    return this.request(`/api/newsletters/${id}/send`, {
-      method: 'POST',
-      body: JSON.stringify({ recipients: recipients || [] }),
-    });
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    try {
+      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters/${id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipients: recipients || [] }),
+      });
+      if (!response.ok) throw new Error('Failed to send newsletter');
+      return await response.json();
+    } catch (err) {
+      console.error('Send newsletter error:', err);
+      throw err;
+    }
   }
 
   async sendNewsletterViaFormspree(subscribers: string[], subject: string, htmlContent: string) {
@@ -210,9 +236,17 @@ class ApiClient {
   }
 
   async deleteNewsletter(id: string) {
-    return this.request(`/api/newsletters/${id}`, {
-      method: 'DELETE',
-    });
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+    try {
+      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete newsletter');
+      return await response.json();
+    } catch (err) {
+      console.error('Delete newsletter error:', err);
+      throw err;
+    }
   }
 
   // Email - Send via backend API
