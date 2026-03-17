@@ -59,14 +59,14 @@ export default function handler(req, res) {
 
   // GET - List subscribers
   if (req.method === 'GET') {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const list = Array.from(subscribers.values());
+      console.log(`✅ Retrieved ${list.length} subscribers`);
+      return res.status(200).json({ subscribers: list, total: list.length });
+    } catch (err) {
+      console.error('Error getting subscribers:', err);
+      return res.status(500).json({ error: 'Failed to get subscribers', details: err.message });
     }
-
-    const list = Array.from(subscribers.values());
-    console.log(`✅ Retrieved ${list.length} subscribers`);
-    return res.status(200).json({ subscribers: list, total: list.length });
   }
 
   // DELETE - Remove subscriber

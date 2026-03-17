@@ -1,109 +1,78 @@
-import { createClient } from '@libsql/client';
+// In-memory storage for newsletters
+let newsletters = new Map();
 
-let db;
-
-function initDb() {
-  if (!db) {
-    const connectionUrl = process.env.TURSO_CONNECTION_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-
-    if (!connectionUrl || !authToken) {
-      throw new Error('Turso credentials not found');
-    }
-
-    db = createClient({
-      url: connectionUrl,
-      authToken: authToken,
-    });
-  }
-  return db;
-}
-
-export default async function handler(req, res) {
+export default function handler(req, res) {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+  // Handle OPTIONS
   if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
+    return res.status(200).end();
   }
 
-  try {
-    const db_instance = initDb();
-
-    // POST - Create newsletter
-    if (req.method === 'POST') {
+  // POST - Create newsletter
+  if (req.method === 'POST') {
+    try {
       const { title, subject, content, language } = req.body;
       
-      if (!subject || !content) {
-        return res.status(400).json({ error: 'Subject and content required' });
+      if (!title && !subject) {
+        return res.status(400).json({ error: 'Title or subject required' });
+      }
+
+      if (!content) {
+        return res.status(400).json({ error: 'Content required' });
       }
 
       const id = `newsletter-${Date.now()}`;
-      const now = new Date().toISOString();
-      
-      await db_instance.execute(
-        'INSERT INTO newsletters (id, title, content, language, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, title || subject, content, language || 'en', 'draft', now]
-      );
-
-      console.log(`✅ Newsletter saved to Turso: ${id}`);
-
       const newsletter = {
         id,
         title: title || subject,
-        subject,
+        subject: subject || title,
         content,
         language: language || 'en',
         status: 'draft',
-        createdAt: now,
+        createdAt: new Date().toISOString(),
       };
 
+      newsletters.set(id, newsletter);
+      console.log(`✅ Newsletter created: ${id}`);
+
       return res.status(200).json({ success: true, newsletter });
+    } catch (err) {
+      console.error('Error creating newsletter:', err);
+      return res.status(500).json({ error: 'Failed to create newsletter', details: err.message });
     }
+  }
 
-    // GET - List newsletters
-    if (req.method === 'GET') {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const result = await db_instance.execute('SELECT * FROM newsletters ORDER BY created_at DESC');
-      const newsletters = result.rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        subject: row.title,
-        content: row.content,
-        language: row.language,
-        status: row.status,
-        createdAt: row.created_at,
-      }));
-
-      console.log(`✅ Retrieved ${newsletters.length} newsletters from Turso`);
-      return res.status(200).json({ newsletters });
+  // GET - List newsletters
+  if (req.method === 'GET') {
+    try {
+      const list = Array.from(newsletters.values());
+      console.log(`✅ Retrieved ${list.length} newsletters`);
+      return res.status(200).json({ newsletters: list });
+    } catch (err) {
+      console.error('Error getting newsletters:', err);
+      return res.status(500).json({ error: 'Failed to get newsletters', details: err.message });
     }
+  }
 
-    // DELETE - Remove newsletter
-    if (req.method === 'DELETE') {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
+  // DELETE - Remove newsletter
+  if (req.method === 'DELETE') {
+    try {
       const { id } = req.body;
-      const result = await db_instance.execute('DELETE FROM newsletters WHERE id = ?', [id]);
-
-      if (result.rowsAffected > 0) {
-        console.log(`✅ Newsletter deleted from Turso: ${id}`);
+      if (newsletters.has(id)) {
+        newsletters.delete(id);
+        console.log(`✅ Newsletter deleted: ${id}`);
         return res.status(200).json({ success: true });
       }
       return res.status(404).json({ error: 'Newsletter not found' });
+    } catch (err) {
+      console.error('Error deleting newsletter:', err);
+      return res.status(500).json({ error: 'Failed to delete newsletter', details: err.message });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (err) {
-    console.error('❌ API error:', err.message);
-    return res.status(500).json({ error: 'Server error', details: err.message });
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }
