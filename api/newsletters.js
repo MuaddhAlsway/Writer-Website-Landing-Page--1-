@@ -19,8 +19,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // POST - Create newsletter
+    // POST - Create newsletter (requires auth)
     if (req.method === 'POST') {
+      // Check authorization
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized - Missing or invalid token' });
+      }
+
       const { title, subject, content, language } = req.body;
       
       if (!title && !subject) {
@@ -59,8 +65,14 @@ export default async function handler(req, res) {
       }
     }
 
-    // GET - List newsletters
+    // GET - List newsletters (requires auth)
     if (req.method === 'GET') {
+      // Check authorization
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized - Missing or invalid token' });
+      }
+
       try {
         const result = await turso.execute('SELECT * FROM newsletters ORDER BY created_at DESC');
         const newsletters = result.rows.map((row) => ({
@@ -81,8 +93,14 @@ export default async function handler(req, res) {
       }
     }
 
-    // DELETE - Remove newsletter
+    // DELETE - Remove newsletter (requires auth)
     if (req.method === 'DELETE') {
+      // Check authorization
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized - Missing or invalid token' });
+      }
+
       try {
         const { id } = req.body;
         if (!id) {
