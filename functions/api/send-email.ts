@@ -275,10 +275,19 @@ export async function onRequestPost(context: any) {
     const gmailUser = context.env.GMAIL_USER;
     const gmailPassword = context.env.GMAIL_APP_PASSWORD;
 
+    console.log('[EMAIL] Checking credentials:');
+    console.log('   GMAIL_USER:', gmailUser ? '✅ Set' : '❌ Missing');
+    console.log('   GMAIL_APP_PASSWORD:', gmailPassword ? '✅ Set' : '❌ Missing');
+
     if (!gmailUser || !gmailPassword) {
       console.error('[EMAIL] Gmail credentials not configured');
+      console.error('[EMAIL] Available env keys:', Object.keys(context.env || {}));
       return new Response(
-        JSON.stringify({ success: false, error: 'Email service not configured' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email service not configured',
+          details: 'GMAIL_USER or GMAIL_APP_PASSWORD not set in Cloudflare environment'
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }

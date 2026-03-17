@@ -23,22 +23,31 @@ function validateToken(token: string, env: any): boolean {
 
 function initDb(env: any) {
   if (!db) {
-    const connectionUrl = env.TURSO_CONNECTION_URL;
+    // Try TURSO_CONNECTION_URL first (new name), then TURSO_DATABASE_URL (old name)
+    const connectionUrl = env.TURSO_CONNECTION_URL || env.TURSO_DATABASE_URL;
     const authToken = env.TURSO_AUTH_TOKEN;
 
+    console.log('🔍 Database Connection Check:');
+    console.log('   TURSO_CONNECTION_URL:', connectionUrl ? '✅ Set' : '❌ Missing');
+    console.log('   TURSO_DATABASE_URL:', env.TURSO_DATABASE_URL ? '✅ Set' : '❌ Missing');
+    console.log('   TURSO_AUTH_TOKEN:', authToken ? '✅ Set' : '❌ Missing');
+
     if (!connectionUrl || !authToken) {
-      throw new Error('Turso not configured');
+      const error = 'Turso not configured - missing TURSO_CONNECTION_URL or TURSO_AUTH_TOKEN';
+      console.error('❌', error);
+      throw new Error(error);
     }
 
     try {
+      console.log('📡 Connecting to Turso...');
       db = createClient({
         url: connectionUrl,
         authToken: authToken,
       });
-      console.log('✅ Turso connected for newsletters');
+      console.log('✅ Turso connected successfully');
     } catch (err: any) {
       console.error('❌ Turso connection failed:', err.message);
-      throw err;
+      throw new Error(`Database connection failed: ${err.message}`);
     }
   }
   return db;
@@ -49,18 +58,30 @@ function initTransporter(env: any) {
     const gmailUser = env.GMAIL_USER;
     const gmailPass = env.GMAIL_APP_PASSWORD;
 
+    console.log('🔍 Email Service Check:');
+    console.log('   GMAIL_USER:', gmailUser ? '✅ Set' : '❌ Missing');
+    console.log('   GMAIL_APP_PASSWORD:', gmailPass ? '✅ Set' : '❌ Missing');
+
     if (!gmailUser || !gmailPass) {
-      console.error('Gmail credentials missing');
-      return null;
+      const error = 'Email service not configured - missing GMAIL_USER or GMAIL_APP_PASSWORD';
+      console.error('❌', error);
+      throw new Error(error);
     }
 
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
-      },
-    });
+    try {
+      console.log('📧 Initializing Gmail transporter...');
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+      });
+      console.log('✅ Gmail transporter initialized');
+    } catch (err: any) {
+      console.error('❌ Transporter initialization failed:', err.message);
+      throw new Error(`Email transporter failed: ${err.message}`);
+    }
   }
   return transporter;
 }
@@ -110,10 +131,12 @@ ${content}
 
 async function sendNewsletter(subject: string, content: string, env: any, db_instance: any) {
   try {
-    const mailer = initTransporter(env);
-    if (!mailer) {
-      console.warn('Email service not available');
-      return { sent: 0, failed: 0 };
+    let mailer;
+    try {
+      mailer = initTransporter(env);
+    } catch (err: any) {
+      console.error('❌ Email service initialization failed:', err.message);
+      throw err;
     }
 
     // Get all subscribers
@@ -203,12 +226,12 @@ export async function onRequest(context: any) {
       );
     }
 
-    const db_instance = initDb(env);
-
     // GET - List newsletters
     if (request.method === 'GET') {
       try {
         console.log('📋 Fetching newsletters from database...');
+        const db_instance = initDb(env);
+        
         const result = await db_instance.execute('SELECT * FROM newsletters ORDER BY sentAt DESC');
         const newsletters = result.rows.map((row: any) => ({
           id: row.id,
@@ -230,6 +253,19 @@ export async function onRequest(context: any) {
         );
       } catch (err: any) {
         console.error('❌ Database error:', err.message);
+        
+        // Check if it's a configuration error
+        if (err.message.includes('not configured') || err.message.includes('missing')) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Database not configured', 
+              details: err.message,
+              hint: 'Add TURSO_CONNECTION_URL and TURSO_AUTH_TOKEN to Cloudflare environment variables'
+            }),
+            { status: 503, headers: corsHeaders }
+          );
+        }
+        
         return new Response(
           JSON.stringify({ 
             error: 'Failed to get newsletters', 
@@ -244,6 +280,7 @@ export async function onRequest(context: any) {
     // POST - Send newsletter
     if (request.method === 'POST') {
       try {
+        const db_instance = initDb(env);
         const body = await request.json();
         const { subject, content } = body;
 
@@ -266,6 +303,19 @@ export async function onRequest(context: any) {
         );
       } catch (err: any) {
         console.error('❌ Newsletter error:', err.message);
+        
+        // Check if it's a configuration error
+        if (err.message.includes('not configured') || err.message.includes('missing')) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Database not configured', 
+              details: err.message,
+              hint: 'Add TURSO_CONNECTION_URL and TURSO_AUTH_TOKEN to Cloudflare environment variables'
+            }),
+            { status: 503, headers: corsHeaders }
+          );
+        }
+        
         return new Response(
           JSON.stringify({ error: 'Failed to send newsletter', details: err.message }),
           { status: 500, headers: corsHeaders }
