@@ -4,6 +4,23 @@ import nodemailer from 'nodemailer';
 let db: any;
 let transporter: any;
 
+// Simple JWT validation (for demo - in production use proper JWT library)
+function validateToken(token: string, env: any): boolean {
+  try {
+    // For now, just check if token exists and is not empty
+    // In production, verify JWT signature using env.JWT_SECRET
+    if (!token || token.length < 10) {
+      return false;
+    }
+    // TODO: Implement proper JWT verification
+    // const decoded = jwt.verify(token, env.JWT_SECRET);
+    return true;
+  } catch (err) {
+    console.error('Token validation error:', err);
+    return false;
+  }
+}
+
 function initDb(env: any) {
   if (!db) {
     const connectionUrl = env.TURSO_CONNECTION_URL;
@@ -166,10 +183,22 @@ export async function onRequest(context: any) {
   }
 
   try {
-    const token = request.headers.get('authorization')?.split(' ')[1];
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+    
     if (!token) {
+      console.warn('❌ Missing authorization token');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - missing token' }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // Validate token
+    if (!validateToken(token, env)) {
+      console.warn('❌ Invalid token');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - invalid token' }),
         { status: 401, headers: corsHeaders }
       );
     }
@@ -179,6 +208,7 @@ export async function onRequest(context: any) {
     // GET - List newsletters
     if (request.method === 'GET') {
       try {
+        console.log('📋 Fetching newsletters from database...');
         const result = await db_instance.execute('SELECT * FROM newsletters ORDER BY sentAt DESC');
         const newsletters = result.rows.map((row: any) => ({
           id: row.id,
@@ -190,13 +220,22 @@ export async function onRequest(context: any) {
 
         console.log(`✅ Retrieved ${newsletters.length} newsletters`);
         return new Response(
-          JSON.stringify({ newsletters, total: newsletters.length }),
+          JSON.stringify({ 
+            success: true,
+            newsletters, 
+            total: newsletters.length,
+            message: `Found ${newsletters.length} newsletters`
+          }),
           { status: 200, headers: corsHeaders }
         );
       } catch (err: any) {
         console.error('❌ Database error:', err.message);
         return new Response(
-          JSON.stringify({ error: 'Failed to get newsletters', details: err.message }),
+          JSON.stringify({ 
+            error: 'Failed to get newsletters', 
+            details: err.message,
+            hint: 'Check if newsletters table exists in database'
+          }),
           { status: 500, headers: corsHeaders }
         );
       }
