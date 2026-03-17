@@ -2,12 +2,13 @@
 let newsletters = new Map();
 
 export default function handler(req, res) {
-  // CORS headers
+  // CORS headers - CRITICAL FIX
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Content-Type', 'application/json');
 
-  // Handle OPTIONS
+  // Handle OPTIONS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -62,6 +63,10 @@ export default function handler(req, res) {
   if (req.method === 'DELETE') {
     try {
       const { id } = req.body;
+      if (!id) {
+        return res.status(400).json({ error: 'ID required' });
+      }
+
       if (newsletters.has(id)) {
         newsletters.delete(id);
         console.log(`✅ Newsletter deleted: ${id}`);

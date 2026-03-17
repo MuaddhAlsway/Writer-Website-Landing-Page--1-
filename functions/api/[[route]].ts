@@ -17,28 +17,35 @@ export async function onRequest(context: any) {
   // Get the API path (everything after /api/)
   const apiPath = url.pathname.replace('/api/', '');
   
-  // Backend URL from environment - remove trailing /api if present
-  let backendUrl = context.env.BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
-  if (backendUrl.endsWith('/api')) {
-    backendUrl = backendUrl.slice(0, -4);
-  }
-  
-  // Build the full backend URL - use /api/ prefix for Vercel serverless functions
+  // Backend URL
+  const backendUrl = 'https://writer-website-landing-page-1.vercel.app';
   const targetUrl = `${backendUrl}/api/${apiPath}${url.search}`;
   
   console.log(`Proxying ${request.method} ${url.pathname} to ${targetUrl}`);
   
   try {
+    // Create clean headers - DO NOT forward request.headers directly
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    
+    // Forward only safe headers
+    const safeHeaders = ['authorization', 'accept', 'accept-language'];
+    for (const [key, value] of request.headers) {
+      if (safeHeaders.includes(key.toLowerCase())) {
+        headers.set(key, value);
+      }
+    }
+    
     // Get request body if it exists
     let body: any = undefined;
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       body = await request.text();
     }
     
-    // Create a new request with the same method, headers, and body
+    // Create a new request with clean headers
     const proxyRequest = new Request(targetUrl, {
       method: request.method,
-      headers: request.headers,
+      headers: headers,
       body: body || undefined,
     });
     

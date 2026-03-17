@@ -22,39 +22,45 @@ subscribers.set('ahmed@example.com', {
 });
 
 export default function handler(req, res) {
-  // CORS headers
+  // CORS headers - CRITICAL FIX
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Content-Type', 'application/json');
 
-  // Handle OPTIONS
+  // Handle OPTIONS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   // POST - Subscribe
   if (req.method === 'POST') {
-    const { email, language } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ error: 'Email required' });
+    try {
+      const { email, language } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email required' });
+      }
+
+      if (subscribers.has(email)) {
+        return res.status(400).json({ error: 'Already subscribed' });
+      }
+
+      const subscriber = {
+        email,
+        language: language || 'en',
+        subscribedAt: new Date().toISOString(),
+        name: '',
+      };
+
+      subscribers.set(email, subscriber);
+      console.log(`✅ Subscriber added: ${email}`);
+
+      return res.status(200).json({ success: true, subscriber });
+    } catch (err) {
+      console.error('Error adding subscriber:', err);
+      return res.status(500).json({ error: 'Failed to add subscriber', details: err.message });
     }
-
-    if (subscribers.has(email)) {
-      return res.status(400).json({ error: 'Already subscribed' });
-    }
-
-    const subscriber = {
-      email,
-      language: language || 'en',
-      subscribedAt: new Date().toISOString(),
-      name: '',
-    };
-
-    subscribers.set(email, subscriber);
-    console.log(`✅ Subscriber added: ${email}`);
-
-    return res.status(200).json({ success: true, subscriber });
   }
 
   // GET - List subscribers
@@ -71,18 +77,22 @@ export default function handler(req, res) {
 
   // DELETE - Remove subscriber
   if (req.method === 'DELETE') {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email required' });
+      }
 
-    const { email } = req.body;
-    if (subscribers.has(email)) {
-      subscribers.delete(email);
-      console.log(`✅ Subscriber deleted: ${email}`);
-      return res.status(200).json({ success: true });
+      if (subscribers.has(email)) {
+        subscribers.delete(email);
+        console.log(`✅ Subscriber deleted: ${email}`);
+        return res.status(200).json({ success: true });
+      }
+      return res.status(404).json({ error: 'Subscriber not found' });
+    } catch (err) {
+      console.error('Error deleting subscriber:', err);
+      return res.status(500).json({ error: 'Failed to delete subscriber', details: err.message });
     }
-    return res.status(404).json({ error: 'Subscriber not found' });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
