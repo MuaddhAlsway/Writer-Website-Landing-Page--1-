@@ -1,83 +1,67 @@
-import { createClient } from '@libsql/client';
+// This file is now a proxy to the backend
+// Cloudflare Pages Functions don't support direct Turso access via context.env
+// All requests are routed through the main [[route]].ts proxy
 
-export async function onRequestGet(context: any) {
+export async function onRequest(context: any) {
+  const { request } = context;
+  const url = new URL(request.url);
+  
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  };
+
+  // Handle OPTIONS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  if (request.method !== 'GET') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: corsHeaders }
+    );
+  }
+
   try {
-    const tursoUrl = context.env.TURSO_CONNECTION_URL;
-    const tursoToken = context.env.TURSO_AUTH_TOKEN;
-
-    if (!tursoUrl || !tursoToken) {
-      // Return mock data if Turso not configured
-      const stats = {
-        stats: {
-          totalSubscribers: 2,
-          activeSubscribers: 2,
-          monthlyStats: [
-            { month: '2026-01', count: 1 },
-            { month: '2026-02', count: 1 },
-            { month: '2026-03', count: 0 }
-          ]
-        }
-      };
-      return new Response(
-        JSON.stringify(stats),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+    // Get backend URL from environment
+    let backendUrl = context.env.BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
+    if (backendUrl.endsWith('/api')) {
+      backendUrl = backendUrl.slice(0, -4);
     }
 
-    // Connect to Turso
-    const client = createClient({
-      url: tursoUrl,
-      authToken: tursoToken,
+    // Build the full backend URL
+    const targetUrl = `${backendUrl}/api/stats${url.search}`;
+
+    console.log(`Proxying ${request.method} /api/stats to ${targetUrl}`);
+
+    // Create a new request with the same method and headers
+    const proxyRequest = new Request(targetUrl, {
+      method: request.method,
+      headers: request.headers,
     });
 
-    // Get total subscribers
-    const totalResult = await client.execute('SELECT COUNT(*) as count FROM subscribers');
-    const totalSubscribers = totalResult.rows[0]?.count || 0;
+    // Fetch from backend
+    const response = await fetch(proxyRequest);
 
-    // Get monthly stats
-    const monthlyResult = await client.execute(`
-      SELECT 
-        strftime('%Y-%m', subscribedAt) as month,
-        COUNT(*) as count
-      FROM subscribers
-      GROUP BY strftime('%Y-%m', subscribedAt)
-      ORDER BY month ASC
-    `);
+    // Clone the response and add CORS headers
+    const newResponse = new Response(response.body, response);
+    newResponse.headers.set('Access-Control-Allow-Origin', '*');
+    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    const monthlyStats = monthlyResult.rows.map((row: any) => ({
-      month: row.month,
-      count: row.count
-    }));
-
-    const stats = {
-      stats: {
-        totalSubscribers,
-        activeSubscribers: totalSubscribers,
-        monthlyStats
-      }
-    };
-
-    return new Response(
-      JSON.stringify(stats),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return newResponse;
   } catch (error: any) {
-    console.error('Stats error:', error);
-    // Fallback to mock data
-    const stats = {
-      stats: {
-        totalSubscribers: 2,
-        activeSubscribers: 2,
-        monthlyStats: [
-          { month: '2026-01', count: 1 },
-          { month: '2026-02', count: 1 },
-          { month: '2026-03', count: 0 }
-        ]
-      }
-    };
+    console.error('Stats proxy error:', error);
     return new Response(
-      JSON.stringify(stats),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Proxy error', details: error.message }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }

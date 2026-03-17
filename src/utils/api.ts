@@ -164,33 +164,53 @@ class ApiClient {
 
   // Subscribers
   async addSubscriber(email: string, language: string = 'en') {
-    return this.request('/api/subscribers', {
-      method: 'POST',
-      body: JSON.stringify({ email, language }),
-    });
+    try {
+      const response = await fetch(`/api/subscribers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, language }),
+      });
+      if (!response.ok) throw new Error('Failed to add subscriber');
+      return await response.json();
+    } catch (err) {
+      console.error('Add subscriber error:', err);
+      throw err;
+    }
   }
 
   async getSubscribers() {
-    return this.request('/api/subscribers');
-  }
-
-  async getSubscriberStats() {
-    return this.request('/api/stats');
+    try {
+      const response = await fetch(`/api/subscribers`, {
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      });
+      if (!response.ok) throw new Error('Failed to get subscribers');
+      return await response.json();
+    } catch (err) {
+      console.error('Get subscribers error:', err);
+      throw err;
+    }
   }
 
   async deleteSubscriber(email: string) {
-    return this.request(`/make-server-53bed28f/subscribers/${email}`, {
-      method: 'DELETE',
-    });
+    try {
+      const response = await fetch(`/api/subscribers/${email}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      });
+      if (!response.ok) throw new Error('Failed to delete subscriber');
+      return await response.json();
+    } catch (err) {
+      console.error('Delete subscriber error:', err);
+      throw err;
+    }
   }
 
   // Newsletters
   async createNewsletter(title: string, content: string, language: string = 'en') {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app/api';
     try {
-      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters`, {
+      const response = await fetch(`/api/newsletters`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
         body: JSON.stringify({ subject: title, content, language }),
       });
       if (!response.ok) throw new Error('Failed to create newsletter');
@@ -202,9 +222,10 @@ class ApiClient {
   }
 
   async getNewsletters() {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
     try {
-      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters`);
+      const response = await fetch(`/api/newsletters`, {
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      });
       if (!response.ok) throw new Error('Failed to get newsletters');
       return await response.json();
     } catch (err) {
@@ -214,14 +235,57 @@ class ApiClient {
   }
 
   async sendNewsletter(id: string, recipients?: string[]) {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
     try {
-      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters/${id}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipients: recipients || [] }),
+      // Get the newsletter first to get its content
+      const newslettersResponse = await fetch(`/api/newsletters`, {
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
-      if (!response.ok) throw new Error('Failed to send newsletter');
+      
+      if (!newslettersResponse.ok) {
+        throw new Error('Failed to get newsletters');
+      }
+
+      const { newsletters } = await newslettersResponse.json();
+      const newsletter = newsletters.find((n: any) => n.id === id);
+
+      if (!newsletter) {
+        throw new Error('Newsletter not found');
+      }
+
+      // Get subscribers to send to
+      const subscribersResponse = await fetch(`/api/subscribers`, {
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      });
+
+      if (!subscribersResponse.ok) {
+        throw new Error('Failed to get subscribers');
+      }
+
+      const { subscribers } = await subscribersResponse.json();
+      const recipientEmails = subscribers.map((s: any) => s.email);
+
+      if (recipientEmails.length === 0) {
+        throw new Error('No subscribers to send to');
+      }
+
+      // Send the newsletter
+      const response = await fetch(`/api/send-newsletter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
+        body: JSON.stringify({ 
+          recipients: recipientEmails,
+          subject: newsletter.subject || newsletter.title,
+          content: newsletter.content,
+          language: newsletter.language,
+          id: id
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to send newsletter');
+      }
+
       return await response.json();
     } catch (err) {
       console.error('Send newsletter error:', err);
@@ -236,10 +300,11 @@ class ApiClient {
   }
 
   async deleteNewsletter(id: string) {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
     try {
-      const response = await fetch(`${backendUrl}/make-server-53bed28f/newsletters/${id}`, {
+      const response = await fetch(`/api/newsletters`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
+        body: JSON.stringify({ id }),
       });
       if (!response.ok) throw new Error('Failed to delete newsletter');
       return await response.json();
@@ -249,12 +314,10 @@ class ApiClient {
     }
   }
 
-  // Email - Send via backend API
+  // Email - Send via backend API (with email template and icon)
   async sendEmail(recipients: string[], subject: string, content: string, image?: string, language: string = 'en') {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
-    
     try {
-      const response = await fetch(`${backendUrl}/api/send-email`, {
+      const response = await fetch(`/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -274,7 +337,7 @@ class ApiClient {
 
       return await response.json();
     } catch (err: any) {
-      console.error('Backend email send error:', err);
+      console.error('Email send error:', err);
       throw err;
     }
   }
@@ -305,17 +368,47 @@ class ApiClient {
   }
 
   async requestPasswordReset(email: string) {
-    return this.request('/api/admin/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const response = await fetch(`/api/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, language: 'en' }),
+      });
+      if (!response.ok) throw new Error('Failed to send reset email');
+      return await response.json();
+    } catch (err) {
+      console.error('Request password reset error:', err);
+      throw err;
+    }
   }
 
   async resetPassword(token: string, newPassword: string) {
-    return this.request('/api/admin/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
-    });
+    try {
+      const response = await fetch(`/api/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      if (!response.ok) throw new Error('Failed to reset password');
+      return await response.json();
+    } catch (err) {
+      console.error('Reset password error:', err);
+      throw err;
+    }
+  }
+
+  async verifyResetToken(token: string) {
+    try {
+      const response = await fetch(`/api/reset-password?token=${token}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Invalid or expired token');
+      return await response.json();
+    } catch (err) {
+      console.error('Verify reset token error:', err);
+      throw err;
+    }
   }
 
   async updateAdminProfile(updates: { email?: string; username?: string; name?: string }) {
@@ -340,3 +433,5 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+

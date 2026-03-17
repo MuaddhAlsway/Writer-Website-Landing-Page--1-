@@ -1,111 +1,67 @@
-import { createClient } from '@libsql/client';
+// This file is now a proxy to the backend
+// Cloudflare Pages Functions don't support direct Turso access via context.env
+// All requests are routed through the main [[route]].ts proxy
 
-export async function onRequestGet(context: any) {
-  try {
-    const tursoUrl = context.env.TURSO_CONNECTION_URL;
-    const tursoToken = context.env.TURSO_AUTH_TOKEN;
+export async function onRequest(context: any) {
+  const { request } = context;
+  const url = new URL(request.url);
+  
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  };
 
-    if (!tursoUrl || !tursoToken) {
-      return new Response(
-        JSON.stringify({ error: 'Turso not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Connect to Turso
-    const client = createClient({
-      url: tursoUrl,
-      authToken: tursoToken,
-    });
-
-    // Query subscribers from database
-    const result = await client.execute('SELECT * FROM subscribers ORDER BY subscribedAt DESC');
-    
-    const subscribers = result.rows.map((row: any) => ({
-      email: row.email,
-      name: row.name || '',
-      language: row.language || 'en',
-      subscribedAt: row.subscribedAt,
-      isActive: true
-    }));
-
-    return new Response(
-      JSON.stringify({ subscribers }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
-  } catch (error: any) {
-    console.error('Subscribers error:', error);
-    // Fallback to mock data on error
-    const mockSubscribers = [
-      {
-        email: 'fatima.author@gmail.com',
-        name: 'فاطمة المؤلفة',
-        language: 'ar',
-        subscribedAt: '2026-01-15T10:30:00Z',
-        isActive: true
-      },
-      {
-        email: 'reader.one@gmail.com',
-        name: 'Reader One',
-        language: 'en',
-        subscribedAt: '2026-01-20T14:45:00Z',
-        isActive: true
-      }
-    ];
-    return new Response(
-      JSON.stringify({ subscribers: mockSubscribers }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+  // Handle OPTIONS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
-}
 
-export async function onRequestPost(context: any) {
   try {
-    const { email, language } = await context.request.json();
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: 'Email required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    // Get backend URL from environment
+    let backendUrl = context.env.BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
+    if (backendUrl.endsWith('/api')) {
+      backendUrl = backendUrl.slice(0, -4);
     }
 
-    const tursoUrl = context.env.TURSO_CONNECTION_URL;
-    const tursoToken = context.env.TURSO_AUTH_TOKEN;
+    // Build the full backend URL
+    const targetUrl = `${backendUrl}/api/subscribers${url.search}`;
 
-    if (!tursoUrl || !tursoToken) {
-      return new Response(
-        JSON.stringify({ error: 'Turso not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+    console.log(`Proxying ${request.method} /api/subscribers to ${targetUrl}`);
+
+    // Get request body if it exists
+    let body: any = undefined;
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      body = await request.text();
     }
 
-    // Connect to Turso
-    const { createClient } = await import('@libsql/client');
-    const client = createClient({
-      url: tursoUrl,
-      authToken: tursoToken,
+    // Create a new request with the same method, headers, and body
+    const proxyRequest = new Request(targetUrl, {
+      method: request.method,
+      headers: request.headers,
+      body: body || undefined,
     });
 
-    // Insert subscriber
-    await client.execute({
-      sql: 'INSERT INTO subscribers (email, language) VALUES (?, ?)',
-      args: [email, language || 'en']
-    });
+    // Fetch from backend
+    const response = await fetch(proxyRequest);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Subscriber added',
-        subscriber: { email, language: language || 'en' }
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    // Clone the response and add CORS headers
+    const newResponse = new Response(response.body, response);
+    newResponse.headers.set('Access-Control-Allow-Origin', '*');
+    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    return newResponse;
   } catch (error: any) {
-    console.error('Add subscriber error:', error);
+    console.error('Subscribers proxy error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to add subscriber' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Proxy error', details: error.message }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
 }

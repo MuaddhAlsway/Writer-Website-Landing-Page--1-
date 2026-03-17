@@ -57,6 +57,15 @@ const getNewsletterTemplate = (subject, content, language = 'en') => {
   `;
 };
 
+// Setup Nodemailer with Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
 // In-memory storage (will reset on each deployment)
 const subscribers = new Map();
 const newsletters = new Map();
@@ -79,7 +88,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { pathname, query } = new URL(req.url, `http://${req.headers.host}`);
+  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
 
   // Health check
   if (pathname === '/api/health') {
@@ -87,7 +96,7 @@ export default async function handler(req, res) {
   }
 
   // ============= SUBSCRIBERS =============
-  if (pathname === '/api/subscribers' || pathname === '/make-server-53bed28f/subscribers') {
+  if (pathname === '/api/subscribers') {
     if (req.method === 'POST') {
       const { email, language } = req.body;
       
@@ -116,7 +125,7 @@ export default async function handler(req, res) {
   }
 
   // Delete subscriber
-  if (pathname.match(/^\/api\/subscribers\//) || pathname.match(/^\/make-server-53bed28f\/subscribers\//)) {
+  if (pathname.match(/^\/api\/subscribers\//)) {
     if (req.method === 'DELETE') {
       const email = pathname.split('/').pop();
       if (subscribers.has(email)) {
@@ -129,7 +138,7 @@ export default async function handler(req, res) {
   }
 
   // Stats
-  if (pathname === '/api/stats' || pathname === '/make-server-53bed28f/stats') {
+  if (pathname === '/api/stats') {
     const total = subscribers.size;
     const active = Math.floor(total * 0.8);
     return res.json({
@@ -140,7 +149,7 @@ export default async function handler(req, res) {
   }
 
   // ============= NEWSLETTERS =============
-  if (pathname === '/api/newsletters' || pathname === '/make-server-53bed28f/newsletters') {
+  if (pathname === '/api/newsletters') {
     if (req.method === 'POST') {
       const { subject, content, language = 'en' } = req.body;
       
@@ -169,7 +178,7 @@ export default async function handler(req, res) {
   }
 
   // Update newsletter
-  if ((pathname.match(/^\/api\/newsletters\//) || pathname.match(/^\/make-server-53bed28f\/newsletters\//)) && req.method === 'PUT') {
+  if (pathname.match(/^\/api\/newsletters\//) && req.method === 'PUT') {
     const id = pathname.split('/').pop();
     const { subject, content, language } = req.body;
     
@@ -187,7 +196,7 @@ export default async function handler(req, res) {
   }
 
   // Delete newsletter
-  if ((pathname.match(/^\/api\/newsletters\//) || pathname.match(/^\/make-server-53bed28f\/newsletters\//)) && req.method === 'DELETE') {
+  if (pathname.match(/^\/api\/newsletters\//) && req.method === 'DELETE' && !pathname.includes('/send')) {
     const id = pathname.split('/').pop();
     if (newsletters.has(id)) {
       newsletters.delete(id);
@@ -198,8 +207,8 @@ export default async function handler(req, res) {
   }
 
   // Send newsletter
-  if ((pathname.match(/^\/api\/newsletters\/.*\/send/) || pathname.match(/^\/make-server-53bed28f\/newsletters\/.*\/send/)) && req.method === 'POST') {
-    const id = pathname.split('/')[pathname.split('/').length - 2];
+  if (pathname.match(/^\/api\/newsletters\/.*\/send/) && req.method === 'POST') {
+    const id = pathname.split('/')[3];
     const newsletter = newsletters.get(id);
     
     if (!newsletter) {
@@ -217,40 +226,7 @@ export default async function handler(req, res) {
 
       for (const recipient of recipientList) {
         try {
-          const htmlContent = `
-            <!DOCTYPE html>
-            <html lang="${recipient.language === 'ar' ? 'ar' : 'en'}" dir="${recipient.language === 'ar' ? 'rtl' : 'ltr'}">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>${newsletter.subject}</title>
-              <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; direction: ${recipient.language === 'ar' ? 'rtl' : 'ltr'}; }
-                .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
-                .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-                .content { padding: 40px 30px; text-align: ${recipient.language === 'ar' ? 'right' : 'left'}; }
-                .content p { color: #333; font-size: 15px; line-height: 1.8; margin-bottom: 15px; }
-                .footer { background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0; }
-                .footer-text { color: #666; font-size: 13px; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>${newsletter.subject}</h1>
-                </div>
-                <div class="content">
-                  ${newsletter.content}
-                </div>
-                <div class="footer">
-                  <p class="footer-text">${recipient.language === 'ar' ? '© 2026 جميع الحقوق محفوظة' : '© 2026 All rights reserved'}</p>
-                </div>
-              </div>
-            </body>
-            </html>
-          `;
+          const htmlContent = getNewsletterTemplate(newsletter.subject, newsletter.content, recipient.language);
 
           const mailOptions = {
             from: process.env.GMAIL_USER,
@@ -298,7 +274,7 @@ export default async function handler(req, res) {
   }
 
   // ============= EMAIL =============
-  if (pathname === '/api/send-email' || pathname === '/make-server-53bed28f/send-email') {
+  if (pathname === '/api/send-email') {
     if (req.method === 'POST') {
       const { recipients, subject, content, language = 'en' } = req.body;
       

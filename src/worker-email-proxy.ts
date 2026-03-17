@@ -1,162 +1,132 @@
 /**
- * Cloudflare Worker - Email Proxy
+ * Cloudflare Worker Email Proxy
  * 
- * This worker acts ONLY as a proxy to the backend email server.
- * It does NOT attempt to send SMTP emails directly.
+ * This worker proxies email requests to the backend Node.js server.
+ * It handles CORS and forwards requests to the configured BACKEND_URL.
  * 
  * Architecture:
- * Frontend (Cloudflare Pages)
- *   ↓
+ * Frontend (Cloudflare Pages) 
+ *   ↓ 
  * Cloudflare Worker (this file)
  *   ↓
- * Node.js Backend Server (emailServer.mjs)
+ * Backend Server (Node.js + Nodemailer)
  *   ↓
- * Nodemailer + Gmail SMTP
- *   ↓
- * Gmail Inbox
+ * Gmail SMTP
  */
 
-interface EmailRequest {
-  recipients: string[];
-  subject: string;
-  message: string;
+interface Env {
+  BACKEND_URL: string;
 }
 
-interface EmailResponse {
-  success: boolean;
-  sent?: number;
-  failed?: number;
-  total?: number;
-  error?: string;
-  errors?: Array<{ recipient: string; error: string }>;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+/**
+ * Handle CORS preflight requests
+ */
+function handleCors(request: Request): Response | null {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+  return null;
 }
 
 /**
- * Handle POST requests to /api/send-email
- * Proxy to backend email server
+ * Proxy request to backend server
  */
-export async function onRequestPost(context: any): Promise<Response> {
+async function proxyToBackend(
+  request: Request,
+  backendUrl: string,
+  pathname: string
+): Promise<Response> {
   try {
-    const backendUrl = context.env.BACKEND_URL;
-
-    if (!backendUrl) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Backend server not configured',
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    let body: EmailRequest;
-    try {
-      body = await context.request.json();
-    } catch (error) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Invalid JSON in request body',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    if (!body.recipients || !Array.isArray(body.recipients)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Recipients must be an array',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    if (!body.subject || !body.message) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Subject and message are required',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    console.log(`[WORKER] Proxying email request to ${backendUrl}/send-email`);
-    console.log(`[WORKER] Recipients: ${body.recipients.length}`);
-
-    const backendResponse = await fetch(`${backendUrl}/send-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    // Build the full backend URL
+    const url = new URL(pathname, backendUrl);
+    
+    // Copy request headers
+    const headers = new Headers(request.headers);
+    
+    // Forward the request to backend
+    const backendResponse = await fetch(url.toString(), {
+      method: request.method,
+      headers: headers,
+      body: request.method !== 'GET' && request.method !== 'HEAD' 
+        ? await request.text() 
+        : undefined,
     });
 
-    const responseData: EmailResponse = await backendResponse.json();
+    // Get response body
+    const body = await backendResponse.text();
 
-    console.log(`[WORKER] Backend response status: ${backendResponse.status}`);
-
-    return new Response(JSON.stringify(responseData), {
+    // Return response with CORS headers
+    return new Response(body, {
       status: backendResponse.status,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...Object.fromEntries(backendResponse.headers),
+        ...corsHeaders,
       },
     });
-
   } catch (error: any) {
-    console.error('[WORKER] Error:', error);
+    console.error('Backend proxy error:', error);
     return new Response(
       JSON.stringify({
-        success: false,
-        error: error.message || 'Worker error',
+        error: 'Backend server error',
+        details: error.message,
       }),
       {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        status: 502,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
       }
     );
   }
 }
 
 /**
- * Handle GET requests for health check
+ * Main worker handler
  */
-export async function onRequestGet(context: any): Promise<Response> {
-  return new Response(
-    JSON.stringify({
-      status: 'ok',
-      service: 'email-proxy-worker',
-    }),
-    {
-      headers: { 'Content-Type': 'application/json' },
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    // Handle CORS preflight
+    const corsResponse = handleCors(request);
+    if (corsResponse) {
+      return corsResponse;
     }
-  );
-}
 
-/**
- * Handle OPTIONS requests for CORS
- */
-export async function onRequestOptions(context: any): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
-}
+    // Get backend URL from environment
+    const backendUrl = env.BACKEND_URL;
+    if (!backendUrl) {
+      return new Response(
+        JSON.stringify({
+          error: 'Backend URL not configured',
+          message: 'Set BACKEND_URL in wrangler.toml',
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        }
+      );
+    }
+
+    // Get request pathname
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+
+    // Log request
+    console.log(`[PROXY] ${request.method} ${pathname} → ${backendUrl}${pathname}`);
+
+    // Proxy to backend
+    return proxyToBackend(request, backendUrl, pathname);
+  },
+};

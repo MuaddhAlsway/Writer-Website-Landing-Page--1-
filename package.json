@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "server": "node --require dotenv/config server-turso-full.mjs",
+    "server": "node --require dotenv/config backend-email-server.mjs",
+    "test:email": "node --require dotenv/config test-email-system.mjs",
     "test:connections": "node --require dotenv/config test-connections.mjs",
     "admin:verify": "node --require dotenv/config verify-admin.mjs",
     "deploy": "npm run build && wrangler deploy",

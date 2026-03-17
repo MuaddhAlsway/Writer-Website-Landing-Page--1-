@@ -545,19 +545,37 @@ app.post('/make-server-53bed28f/newsletters/:id/send', async (req, res) => {
 
     const htmlContent = getEmailTemplate(newsletter.title, newsletter.content);
 
-    await transporter.sendMail({
-      from: emailUser,
-      to: subscribers.join(','),
-      subject: newsletter.title,
-      html: htmlContent,
-    });
+    // FIXED: Send to each recipient individually instead of joining with comma
+    let sentCount = 0;
+    const errors = [];
+
+    for (const email of subscribers) {
+      try {
+        await transporter.sendMail({
+          from: emailUser,
+          to: email, // Single recipient, not comma-joined
+          subject: newsletter.title,
+          html: htmlContent,
+        });
+        sentCount++;
+        console.log(`[NEWSLETTER] Sent to ${email}`);
+      } catch (err) {
+        console.error(`[NEWSLETTER] Failed to send to ${email}:`, err.message);
+        errors.push(`${email}: ${err.message}`);
+      }
+    }
 
     await db.execute({
       sql: 'UPDATE newsletters SET status = ?, sent_at = CURRENT_TIMESTAMP WHERE id = ?',
       args: ['sent', id],
     });
 
-    res.json({ success: true, message: 'Newsletter sent', count: subscribers.length });
+    res.json({
+      success: sentCount > 0,
+      message: `Newsletter sent to ${sentCount}/${subscribers.length} recipients`,
+      count: sentCount,
+      errors: errors.length > 0 ? errors : undefined,
+    });
   } catch (err) {
     console.error('Send newsletter error:', err);
     res.status(500).json({ error: 'Failed to send newsletter' });
@@ -586,20 +604,44 @@ app.post('/make-server-53bed28f/send-email', async (req, res) => {
   try {
     const { recipients, subject, content } = req.body;
 
-    if (!recipients || !subject || !content) {
-      return res.status(400).json({ error: 'Recipients, subject, and content required' });
+    if (!recipients || recipients.length === 0) {
+      return res.status(400).json({ error: 'Recipients required' });
     }
+
+    if (!subject || !content) {
+      return res.status(400).json({ error: 'Subject and content required' });
+    }
+
+    console.log(`[EMAIL] Sending to ${recipients.length} recipients`);
 
     const htmlContent = getEmailTemplate(subject, content);
 
-    await transporter.sendMail({
-      from: emailUser,
-      to: recipients.join(','),
-      subject,
-      html: htmlContent,
-    });
+    // FIXED: Send to each recipient individually instead of joining with comma
+    let sentCount = 0;
+    const errors = [];
 
-    res.json({ success: true, message: 'Email sent', count: recipients.length });
+    for (const email of recipients) {
+      try {
+        await transporter.sendMail({
+          from: emailUser,
+          to: email, // Single recipient, not comma-joined
+          subject,
+          html: htmlContent,
+        });
+        sentCount++;
+        console.log(`[EMAIL] Sent to ${email}`);
+      } catch (err) {
+        console.error(`[EMAIL] Failed to send to ${email}:`, err.message);
+        errors.push(`${email}: ${err.message}`);
+      }
+    }
+
+    res.json({
+      success: sentCount > 0,
+      message: `Email sent to ${sentCount}/${recipients.length} recipients`,
+      count: sentCount,
+      errors: errors.length > 0 ? errors : undefined,
+    });
   } catch (err) {
     console.error('Send email error:', err);
     res.status(500).json({ error: 'Failed to send email' });
