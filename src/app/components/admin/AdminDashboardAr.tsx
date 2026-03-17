@@ -47,13 +47,36 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50/30" dir="rtl">
-      {/* Header */}
+      {/* Header with Status */}
       <header className="bg-stone-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-right">
+          <div className="text-right flex-1">
             <h1 className="text-2xl font-bold">لوحة التحكم</h1>
             <p className="text-stone-400 text-sm">إدارة موقع الكاتبة</p>
           </div>
+          
+          {/* Status Indicator */}
+          <div className="flex items-center gap-3 mx-6">
+            {backendStatus === 'connected' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-900/30 rounded-full border border-green-500/50">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-green-300">متصل</span>
+              </div>
+            )}
+            {backendStatus === 'error' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-red-900/30 rounded-full border border-red-500/50">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-300">خطأ في الاتصال</span>
+              </div>
+            )}
+            {backendStatus === 'checking' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-yellow-900/30 rounded-full border border-yellow-500/50">
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-yellow-300">جاري الفحص</span>
+              </div>
+            )}
+          </div>
+          
           <Button
             onClick={onLogout}
             variant="outline"
