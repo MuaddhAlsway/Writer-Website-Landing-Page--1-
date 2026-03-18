@@ -348,7 +348,7 @@ export async function onRequestPost(context: any) {
           body: JSON.stringify({
             recipients,
             subject,
-            content,
+            message: htmlContent,  // server-standalone.mjs expects 'message' not 'content'
             language,
           }),
         });

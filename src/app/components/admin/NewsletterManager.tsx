@@ -40,19 +40,31 @@ export function NewsletterManager({ accessToken }: NewsletterManagerProps) {
     setMessage(null);
 
     try {
-      const result = await apiClient.sendNewsletter(subject, content);
+      // Get subscribers first
+      const subResp = await fetch('/api/subscribers', {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+      if (!subResp.ok) throw new Error('Failed to load subscribers');
+      const { subscribers } = await subResp.json();
 
-      if (result.error) {
-        setMessage({ type: 'error', text: result.error });
-      } else {
-        setMessage({
-          type: 'success',
-          text: `Newsletter sent to ${result.sent} subscribers`,
-        });
-        setSubject('');
-        setContent('');
-        await loadNewsletters();
+      if (!subscribers || subscribers.length === 0) {
+        setMessage({ type: 'error', text: 'No subscribers to send to' });
+        setLoading(false);
+        return;
       }
+
+      const recipients = subscribers.map((s: any) => s.email);
+
+      // Send via send-email endpoint (proxies to Vercel → Gmail)
+      const result = await apiClient.sendEmail(recipients, subject, content);
+
+      setMessage({
+        type: 'success',
+        text: `Newsletter sent to ${result.sentCount ?? result.sent ?? recipients.length} subscribers`,
+      });
+      setSubject('');
+      setContent('');
+      await loadNewsletters();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to send newsletter' });
     } finally {
