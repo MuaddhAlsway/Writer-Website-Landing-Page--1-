@@ -94,7 +94,7 @@ export async function onRequest(context: any) {
     }
   }
 
-  // POST — create/send newsletter
+  // POST — create newsletter as draft (do NOT send yet)
   if (request.method === 'POST') {
     let body: any;
     try {
@@ -108,35 +108,20 @@ export async function onRequest(context: any) {
     if (!newsletterTitle || !content) return json({ error: 'Title/subject and content required' }, 400);
 
     try {
-      const subResult = await db.execute('SELECT email, language FROM subscribers');
-      const subscribers = subResult.rows;
-
-      const fromEmail = env.GMAIL_USER || 'noreply@author-fatima.pages.dev';
-      let sent = 0;
-      let failed = 0;
-
-      for (const sub of subscribers) {
-        const html = buildHtml(newsletterTitle, content, sub.language || language);
-        const ok = await sendViaMailChannels(sub.email, newsletterTitle, html, fromEmail);
-        ok ? sent++ : failed++;
-      }
-
       const now = new Date().toISOString();
-      const id = crypto.randomUUID();
+      const id = `nl-${Date.now()}`;
 
       await db.execute(
-        'INSERT INTO newsletters (id, title, content, language, status, created_at, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [id, newsletterTitle, content, language, 'sent', now, now]
+        'INSERT INTO newsletters (id, title, content, language, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, newsletterTitle, content, language, 'draft', now]
       );
 
       return json({
         success: true,
-        message: `Newsletter sent to ${sent} subscribers`,
-        sent, failed, total: subscribers.length,
-        id,
+        newsletter: { id, title: newsletterTitle, subject: newsletterTitle, content, language, status: 'draft', createdAt: now, sentAt: null },
       });
     } catch (err: any) {
-      return json({ error: 'Failed to send newsletter', details: err.message }, 500);
+      return json({ error: 'Failed to create newsletter', details: err.message }, 500);
     }
   }
 
