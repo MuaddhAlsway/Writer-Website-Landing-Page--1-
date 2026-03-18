@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/*", "/make-server-53bed28f/*"],
+  "include": ["/api/*"],
   "exclude": []
 }
