@@ -316,29 +316,15 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                 </div>
 
                 <div className="flex gap-2">
-                  {!newsletter.sentAt && (
-                    <Button
-                      onClick={() => handleSend(newsletter.id)}
-                      disabled={sending === newsletter.id}
-                      size="sm"
-                      className="bg-stone-800 hover:bg-stone-900 text-white"
-                    >
-                      <Send className="w-4 h-4 ml-2" />
-                      إرسال الآن
-                    </Button>
-                  )}
-                  {newsletter.sentAt && (
-                    <Button
-                      onClick={() => handleSend(newsletter.id)}
-                      disabled={sending === newsletter.id}
-                      size="sm"
-                      variant="outline"
-                      className="text-stone-700"
-                    >
-                      <Send className="w-4 h-4 ml-2" />
-                      إعادة الإرسال
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => handleSend(newsletter.id)}
+                    disabled={sending === newsletter.id}
+                    size="sm"
+                    className="bg-stone-800 hover:bg-stone-900 text-white"
+                  >
+                    <Send className="w-4 h-4 ml-2" />
+                    {sending === newsletter.id ? 'جاري الإرسال...' : newsletter.sentAt ? 'إعادة الإرسال' : 'إرسال الآن'}
+                  </Button>
                   <Button
                     onClick={() => handleDelete(newsletter.id)}
                     size="sm"

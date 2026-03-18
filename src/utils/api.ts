@@ -170,8 +170,9 @@ class ApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, language }),
       });
-      if (!response.ok) throw new Error('Failed to add subscriber');
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to add subscriber');
+      return data;
     } catch (err) {
       console.error('Add subscriber error:', err);
       throw err;
