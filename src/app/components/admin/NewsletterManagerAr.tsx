@@ -327,6 +327,18 @@ export function NewsletterManagerAr({ accessToken }: NewsletterManagerArProps) {
                       إرسال الآن
                     </Button>
                   )}
+                  {newsletter.sentAt && (
+                    <Button
+                      onClick={() => handleSend(newsletter.id)}
+                      disabled={sending === newsletter.id}
+                      size="sm"
+                      variant="outline"
+                      className="text-stone-700"
+                    >
+                      <Send className="w-4 h-4 ml-2" />
+                      إعادة الإرسال
+                    </Button>
+                  )}
                   <Button
                     onClick={() => handleDelete(newsletter.id)}
                     size="sm"
