@@ -23,7 +23,11 @@ export async function onRequest(context: any) {
   }
 
   // Proxy to Vercel backend which uses Gmail SMTP + nodemailer
-  const backendUrl = env.BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app/api';
+  // Always fall back to production Vercel URL (never localhost)
+  const rawBackend = env.BACKEND_URL || '';
+  const backendUrl = rawBackend.startsWith('http://localhost')
+    ? 'https://writer-website-landing-page-1.vercel.app/api'
+    : rawBackend || 'https://writer-website-landing-page-1.vercel.app/api';
 
   try {
     const resp = await fetch(`${backendUrl}/send-email`, {

@@ -10,9 +10,9 @@ pages_build_output_dir = "dist"
 # ============================================================================
 
 [vars]
-ENVIRONMENT = "development"
-BACKEND_URL = "http://localhost:3001"
-FRONTEND_URL = "http://localhost:5173"
+ENVIRONMENT = "production"
+BACKEND_URL = "https://writer-website-landing-page-1.vercel.app/api"
+FRONTEND_URL = "https://main.author-fatima-76r-eis.pages.dev"
 
 # ============================================================================
 # PRODUCTION ENVIRONMENT
