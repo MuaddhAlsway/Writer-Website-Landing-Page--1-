@@ -341,14 +341,17 @@ export async function onRequestPost(context: any) {
         );
       }
 
+      // Normalize backendUrl — strip trailing /api if present to avoid double /api/api
+      const base = backendUrl.replace(/\/api\/?$/, '');
+
       try {
-        const response = await fetch(`${backendUrl}/send-newsletter`, {
+        const response = await fetch(`${base}/api/send-newsletter`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             recipients,
             subject,
-            message: htmlContent,  // server-standalone.mjs expects 'message' not 'content'
+            content: htmlContent,
             language,
           }),
         });
