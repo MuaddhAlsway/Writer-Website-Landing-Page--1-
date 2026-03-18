@@ -53,18 +53,11 @@ export async function onRequest(context: any) {
     }
 
     try {
-      // Ensure table exists
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS subscribers (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL,
-          language TEXT DEFAULT 'en',
-          name TEXT DEFAULT '',
-          subscribedAt TEXT DEFAULT (datetime('now'))
-        )
-      `);
-
-      const existing = await db.execute('SELECT email FROM subscribers WHERE email = ?', [email]);
+      // Table already exists in production — just check for duplicate
+      const existing = await db.execute(
+        'SELECT email FROM subscribers WHERE email = ?',
+        [email]
+      );
       if (existing.rows.length > 0) {
         return json({ error: 'Already subscribed' }, 400);
       }
@@ -91,16 +84,6 @@ export async function onRequest(context: any) {
     if (!token) return json({ error: 'Unauthorized' }, 401);
 
     try {
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS subscribers (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL,
-          language TEXT DEFAULT 'en',
-          name TEXT DEFAULT '',
-          subscribedAt TEXT DEFAULT (datetime('now'))
-        )
-      `);
-
       const result = await db.execute('SELECT * FROM subscribers ORDER BY subscribedAt DESC');
       const subscribers = result.rows.map((r: any) => ({
         id: r.id,

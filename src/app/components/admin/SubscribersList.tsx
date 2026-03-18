@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
-import { Trash2, Download, Search, AlertCircle } from 'lucide-react';
+import { Trash2, Download, Search, AlertCircle, Users, TrendingUp, Calendar } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 
 interface Subscriber {

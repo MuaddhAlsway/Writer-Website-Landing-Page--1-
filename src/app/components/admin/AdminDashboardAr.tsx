@@ -5,6 +5,7 @@ import { SubscribersListAr } from './SubscribersListAr';
 import { NewsletterManagerAr } from './NewsletterManagerAr';
 import { SendEmailAr } from './SendEmailAr';
 import { AccountSettingsAr } from './AccountSettingsArNew';
+import { DashboardStatsAr } from './DashboardStatsAr';
 import { apiClient } from '@/utils/api';
 
 interface AdminDashboardArProps {
@@ -89,7 +90,12 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
       </header>
 
       {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 mt-8">
+        {/* Dashboard Stats */}
+        <div className="mb-8">
+          <DashboardStatsAr accessToken={accessToken} />
+        </div>
+
         <div className="bg-white rounded-lg shadow-md p-2 mb-6">
           <div className="flex gap-2">
             {tabs.map((tab) => {

@@ -1,129 +1,109 @@
-import { Card } from '@/app/components/ui/card';
-import { Button } from '@/app/components/ui/button';
-import { RefreshCw } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useState, useEffect } from 'react';
+import { Users, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface DashboardStatsProps {
-  stats: {
-    totalSubscribers: number;
-    activeSubscribers: number;
-    monthlyStats: Array<{ month: string; count: number }>;
-  };
-  onRefresh: () => void;
+  accessToken: string;
 }
 
-export function DashboardStats({ stats, onRefresh }: DashboardStatsProps) {
-  // Helper function to safely parse month string
-  const parseMonth = (monthStr: string) => {
+export function DashboardStats({ accessToken }: DashboardStatsProps) {
+  const [stats, setStats] = useState({
+    subscribers: 0,
+    newsletters: 0,
+    loading: true,
+    error: null as string | null,
+  });
+
+  useEffect(() => {
+    loadStats();
+  }, [accessToken]);
+
+  const loadStats = async () => {
     try {
-      // Handle format "2026-02" -> "2026-02-01"
-      let dateStr = monthStr;
-      if (monthStr.match(/^\d{4}-\d{2}$/)) {
-        dateStr = `${monthStr}-01`;
+      setStats(prev => ({ ...prev, loading: true, error: null }));
+
+      const [subscribersRes, newslettersRes] = await Promise.all([
+        fetch('/api/subscribers', {
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        }),
+        fetch('/api/newsletters', {
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        }),
+      ]);
+
+      const subscribersData = await subscribersRes.json();
+      const newslettersData = await newslettersRes.json();
+
+      if (!subscribersRes.ok || !newslettersRes.ok) {
+        setStats(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to load stats',
+        }));
+        return;
       }
-      const date = new Date(dateStr + 'T00:00:00Z');
-      if (isNaN(date.getTime())) {
-        return new Date(); // Fallback to today
-      }
-      return date;
-    } catch {
-      return new Date(); // Fallback to today
+
+      setStats({
+        subscribers: subscribersData.subscribers?.length || 0,
+        newsletters: newslettersData.newsletters?.length || 0,
+        loading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      setStats(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message || 'Failed to load stats',
+      }));
     }
   };
 
-  // Format month data for charts
-  const chartData = stats.monthlyStats.map((stat) => ({
-    month: parseMonth(stat.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-    subscribers: stat.count,
-  }));
-
-  // Calculate cumulative data
-  let cumulative = 0;
-  const cumulativeData = stats.monthlyStats.map((stat) => {
-    cumulative += stat.count;
-    return {
-      month: parseMonth(stat.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-      total: cumulative,
-    };
-  });
+  const StatCard = ({ icon: Icon, label, value, error }: any) => (
+    <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-600 text-sm font-medium">{label}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">
+            {error ? '—' : value}
+          </p>
+        </div>
+        <Icon className="w-12 h-12 text-blue-500 opacity-20" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-stone-900">Analytics Overview</h2>
-        <Button onClick={onRefresh} variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+      {stats.error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-red-900 font-medium">Error loading stats</p>
+            <p className="text-red-700 text-sm">{stats.error}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <StatCard
+          icon={Users}
+          label="Total Subscribers"
+          value={stats.subscribers}
+          error={stats.error}
+        />
+        <StatCard
+          icon={Mail}
+          label="Newsletters Sent"
+          value={stats.newsletters}
+          error={stats.error}
+        />
       </div>
 
-      {/* Monthly Signups Chart */}
-      <Card className="p-6 bg-white shadow-lg">
-        <h3 className="text-lg font-semibold text-stone-900 mb-4">Monthly Signups</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="subscribers" fill="#78716c" />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* Cumulative Growth Chart */}
-      <Card className="p-6 bg-white shadow-lg">
-        <h3 className="text-lg font-semibold text-stone-900 mb-4">Cumulative Growth</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={cumulativeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="total" stroke="#78716c" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* Monthly Breakdown Table */}
-      <Card className="p-6 bg-white shadow-lg">
-        <h3 className="text-lg font-semibold text-stone-900 mb-4">Monthly Breakdown</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-stone-200">
-                <th className="text-left py-3 px-4 text-stone-700 font-semibold">Month</th>
-                <th className="text-right py-3 px-4 text-stone-700 font-semibold">New Subscribers</th>
-                <th className="text-right py-3 px-4 text-stone-700 font-semibold">Cumulative Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.monthlyStats.map((stat, index) => {
-                const cumulativeTotal = stats.monthlyStats
-                  .slice(0, index + 1)
-                  .reduce((sum, s) => sum + s.count, 0);
-                
-                return (
-                  <tr key={stat.month} className="border-b border-stone-100 hover:bg-stone-50">
-                    <td className="py-3 px-4 text-stone-900">
-                      {new Date(stat.month + '-01').toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </td>
-                    <td className="py-3 px-4 text-right text-stone-900 font-medium">
-                      {stat.count}
-                    </td>
-                    <td className="py-3 px-4 text-right text-stone-600">
-                      {cumulativeTotal}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {stats.loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading stats...</span>
         </div>
-      </Card>
+      )}
     </div>
   );
 }

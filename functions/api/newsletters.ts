@@ -1,7 +1,7 @@
 import { createClient } from '@libsql/client';
 
 function getDb(env: any) {
-  const url = env.TURSO_CONNECTION_URL?.split('?')[0]; // strip embedded ?authToken= if present
+  const url = env.TURSO_CONNECTION_URL?.split('?')[0];
   const authToken = env.TURSO_AUTH_TOKEN;
   if (!url || !authToken) {
     throw new Error(
@@ -22,12 +22,7 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: cors });
 }
 
-async function sendViaMailChannels(
-  to: string,
-  subject: string,
-  html: string,
-  fromEmail: string
-): Promise<boolean> {
+async function sendViaMailChannels(to: string, subject: string, html: string, fromEmail: string): Promise<boolean> {
   try {
     const res = await fetch('https://api.mailchannels.net/tx/v1/send', {
       method: 'POST',
@@ -79,40 +74,19 @@ export async function onRequest(context: any) {
     return json({ error: 'Database not configured', details: err.message }, 503);
   }
 
-  // Ensure tables exist
-  try {
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS newsletters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        subject TEXT NOT NULL,
-        content TEXT,
-        sentAt TEXT DEFAULT (datetime('now')),
-        recipientCount INTEGER DEFAULT 0
-      )
-    `);
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS subscribers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        language TEXT DEFAULT 'en',
-        name TEXT DEFAULT '',
-        subscribedAt TEXT DEFAULT (datetime('now'))
-      )
-    `);
-  } catch (err: any) {
-    return json({ error: 'Database init failed', details: err.message }, 500);
-  }
-
-  // GET — list newsletters
+  // GET — list newsletters (real schema: id, title, content, language, status, created_at, sent_at)
   if (request.method === 'GET') {
     try {
-      const result = await db.execute('SELECT * FROM newsletters ORDER BY sentAt DESC');
+      const result = await db.execute('SELECT * FROM newsletters ORDER BY created_at DESC');
       const newsletters = result.rows.map((r: any) => ({
         id: r.id,
-        subject: r.subject,
+        subject: r.title,   // map title → subject for frontend compatibility
+        title: r.title,
         content: r.content,
-        sentAt: r.sentAt,
-        recipientCount: r.recipientCount,
+        language: r.language,
+        status: r.status,
+        sentAt: r.sent_at,
+        createdAt: r.created_at,
       }));
       return json({ success: true, newsletters, total: newsletters.length });
     } catch (err: any) {
@@ -120,7 +94,7 @@ export async function onRequest(context: any) {
     }
   }
 
-  // POST — send newsletter
+  // POST — create/send newsletter
   if (request.method === 'POST') {
     let body: any;
     try {
@@ -129,8 +103,9 @@ export async function onRequest(context: any) {
       return json({ error: 'Invalid JSON body' }, 400);
     }
 
-    const { subject, content } = body;
-    if (!subject || !content) return json({ error: 'Subject and content required' }, 400);
+    const { subject, title, content, language = 'en' } = body;
+    const newsletterTitle = title || subject;
+    if (!newsletterTitle || !content) return json({ error: 'Title/subject and content required' }, 400);
 
     try {
       const subResult = await db.execute('SELECT email, language FROM subscribers');
@@ -141,18 +116,25 @@ export async function onRequest(context: any) {
       let failed = 0;
 
       for (const sub of subscribers) {
-        const html = buildHtml(subject, content, sub.language || 'en');
-        const ok = await sendViaMailChannels(sub.email, subject, html, fromEmail);
+        const html = buildHtml(newsletterTitle, content, sub.language || language);
+        const ok = await sendViaMailChannels(sub.email, newsletterTitle, html, fromEmail);
         ok ? sent++ : failed++;
       }
 
-      // Save to DB
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+
       await db.execute(
-        'INSERT INTO newsletters (subject, content, sentAt, recipientCount) VALUES (?, ?, ?, ?)',
-        [subject, content, new Date().toISOString(), sent]
+        'INSERT INTO newsletters (id, title, content, language, status, created_at, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [id, newsletterTitle, content, language, 'sent', now, now]
       );
 
-      return json({ success: true, message: `Newsletter sent to ${sent} subscribers`, sent, failed, total: subscribers.length });
+      return json({
+        success: true,
+        message: `Newsletter sent to ${sent} subscribers`,
+        sent, failed, total: subscribers.length,
+        id,
+      });
     } catch (err: any) {
       return json({ error: 'Failed to send newsletter', details: err.message }, 500);
     }

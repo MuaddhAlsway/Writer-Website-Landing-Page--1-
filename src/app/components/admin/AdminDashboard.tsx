@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button';
 import { SubscribersList } from './SubscribersList';
 import { NewsletterManager } from './NewsletterManager';
 import { AccountSettings } from './AccountSettings';
+import { DashboardStats } from './DashboardStats';
 import { apiClient } from '@/utils/api';
 
 interface AdminDashboardProps {
@@ -88,6 +89,11 @@ export function AdminDashboard({ accessToken, onLogout }: AdminDashboardProps) {
 
       {/* Navigation Tabs */}
       <div className="max-w-7xl mx-auto px-6 mt-8">
+        {/* Dashboard Stats */}
+        <div className="mb-8">
+          <DashboardStats accessToken={accessToken} />
+        </div>
+
         <div className="bg-white rounded-lg shadow-md p-2 mb-6">
           <div className="flex gap-2">
             {tabs.map((tab) => {

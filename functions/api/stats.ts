@@ -34,25 +34,7 @@ export async function onRequest(context: any) {
   }
 
   try {
-    // Ensure tables exist before querying
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS subscribers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        language TEXT DEFAULT 'en',
-        name TEXT DEFAULT '',
-        subscribedAt TEXT DEFAULT (datetime('now'))
-      )
-    `);
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS newsletters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        subject TEXT NOT NULL,
-        content TEXT,
-        sentAt TEXT DEFAULT (datetime('now')),
-        recipientCount INTEGER DEFAULT 0
-      )
-    `);
+    // Tables already exist in production DB — no CREATE needed
 
     const [subResult, nlResult] = await Promise.all([
       db.execute('SELECT COUNT(*) as count FROM subscribers'),
@@ -62,9 +44,9 @@ export async function onRequest(context: any) {
     const totalSubscribers = Number(subResult.rows[0]?.count ?? 0);
     const totalNewsletters = Number(nlResult.rows[0]?.count ?? 0);
 
-    // Get recent newsletters
+    // Get recent newsletters (use actual schema: title, created_at, sent_at)
     const recentNl = await db.execute(
-      'SELECT id, subject, sentAt, recipientCount FROM newsletters ORDER BY sentAt DESC LIMIT 5'
+      'SELECT id, title, created_at, sent_at, status FROM newsletters ORDER BY created_at DESC LIMIT 5'
     );
 
     return json({
