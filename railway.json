@@ -6,6 +6,7 @@
   "deploy": {
     "numReplicas": 1,
     "startCommand": "node server-standalone.mjs",
+    "healthcheckPath": "/health",
     "restartPolicyMaxRetries": 5
   }
 }
