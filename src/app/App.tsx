@@ -20,7 +20,7 @@ export default function App() {
 
   const path = window.location.pathname;
   const isAdminRoute = path === '/admin' || path === '/login';
-  const isDashboardRoute = path === '/admin/dashboard';
+  const isDashboardRoute = path === '/admin/dashboard' || path.startsWith('/admin/dashboard');
   const isResetPasswordRoute = path === '/reset-password';
 
   const scrollToEmailSection = () => {

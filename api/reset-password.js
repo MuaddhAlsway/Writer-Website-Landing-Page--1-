@@ -1,5 +1,14 @@
 import { createClient } from '@libsql/client';
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { promisify } from 'util';
+
+const pbkdf2 = promisify(crypto.pbkdf2);
+
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = await pbkdf2(password, salt, 100000, 32, 'sha256');
+  return `pbkdf2:${salt}:${hash.toString('base64')}`;
+}
 
 function getDb() {
   const url = process.env.TURSO_CONNECTION_URL;
@@ -52,7 +61,7 @@ export default async function handler(req, res) {
       const { email } = result.rows[0];
       await db.execute('DELETE FROM password_reset_tokens WHERE token = ?', [token]);
 
-      const hashed = await bcrypt.hash(newPassword, 12);
+      const hashed = await hashPassword(newPassword);
       await db.execute(
         "UPDATE admins SET password = ?, updated_at = datetime('now') WHERE email = ?",
         [hashed, email]
