@@ -34,8 +34,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   email TEXT NOT NULL,
   token TEXT UNIQUE NOT NULL,
   expires_at DATETIME NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (email) REFERENCES admins(email) ON DELETE CASCADE
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Newsletters table
