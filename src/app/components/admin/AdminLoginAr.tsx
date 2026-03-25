@@ -139,9 +139,9 @@ export function AdminLoginAr({ onLogin }: AdminLoginArProps) {
                 required
                 placeholder="••••••••"
                 className="w-full"
-                minLength={6}
+                minLength={8}
               />
-              <p className="text-xs text-stone-500 mt-1">6 أحرف على الأقل</p>
+              <p className="text-xs text-stone-500 mt-1">8 أحرف على الأقل</p>
             </div>
           )}
 
