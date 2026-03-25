@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     const db = getDb();
     const token = crypto.randomBytes(32).toString('hex');
     // Use SQLite-compatible datetime format (no T/Z)
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
       .toISOString()
       .replace('T', ' ')
       .replace('Z', '')
