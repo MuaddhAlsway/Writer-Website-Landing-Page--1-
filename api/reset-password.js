@@ -1,3 +1,4 @@
+// v2 - PBKDF2 only, no bcrypt
 import { createClient } from '@libsql/client';
 import crypto from 'crypto';
 import { promisify } from 'util';
