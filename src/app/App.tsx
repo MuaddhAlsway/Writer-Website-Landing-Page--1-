@@ -12,115 +12,103 @@ import { AdminDashboardAr } from '@/app/components/admin/AdminDashboardAr';
 import { ResetPasswordPageAr } from '@/app/components/admin/ResetPasswordPageAr';
 import { apiClient } from '@/utils/api';
 
+type View = 'public' | 'login' | 'dashboard' | 'reset-password';
+
+function getInitialView(): View {
+  const path = window.location.pathname;
+  if (path === '/reset-password') return 'reset-password';
+  if (path === '/admin' || path === '/login') return 'login';
+  if (path.startsWith('/admin/dashboard')) return 'dashboard';
+  return 'public';
+}
+
+function getStoredToken(): { token: string; refreshToken: string } | null {
+  const token = localStorage.getItem('admin_access_token');
+  const refreshToken = localStorage.getItem('admin_refresh_token');
+  const expiry = localStorage.getItem('admin_token_expiry');
+  if (!token || !expiry) return null;
+  if (parseInt(expiry, 10) <= Date.now()) {
+    localStorage.removeItem('admin_access_token');
+    localStorage.removeItem('admin_refresh_token');
+    localStorage.removeItem('admin_token_expiry');
+    return null;
+  }
+  return { token, refreshToken: refreshToken || '' };
+}
+
 export default function App() {
   const emailSectionRef = useRef<HTMLDivElement>(null);
-  const [isArabic, setIsArabic] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [tokenExpiry, setTokenExpiry] = useState<number | null>(null);
+  const initialView = getInitialView();
+  const stored = getStoredToken();
 
-  const path = window.location.pathname;
-  const isAdminRoute = path === '/admin' || path === '/login';
-  const isDashboardRoute = path === '/admin/dashboard' || path.startsWith('/admin/dashboard');
-  const isResetPasswordRoute = path === '/reset-password';
+  // If trying to access dashboard without token, show login instead
+  const startView: View = initialView === 'dashboard' && !stored ? 'login' : initialView;
 
-  const scrollToEmailSection = () => {
-    emailSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const [view, setView] = useState<View>(startView);
+  const [accessToken, setAccessToken] = useState<string | null>(stored?.token || null);
 
-  // Restore token from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('admin_access_token');
-    const storedRefreshToken = localStorage.getItem('admin_refresh_token');
-    const storedExpiry = localStorage.getItem('admin_token_expiry');
-    
-    if (storedToken && storedExpiry) {
-      const expiryTime = parseInt(storedExpiry, 10);
-      if (expiryTime > Date.now()) {
-        setAccessToken(storedToken);
-        setTokenExpiry(expiryTime);
-        if (storedRefreshToken) {
-          apiClient.setTokens(storedToken, storedRefreshToken);
-        }
-      } else {
-        // Token expired, clear it
-        localStorage.removeItem('admin_access_token');
-        localStorage.removeItem('admin_refresh_token');
-        localStorage.removeItem('admin_token_expiry');
-      }
+    if (stored?.token) {
+      apiClient.setTokens(stored.token, stored.refreshToken);
     }
+    // Set RTL
+    document.documentElement.setAttribute('dir', 'rtl');
+    document.documentElement.setAttribute('lang', 'ar');
   }, []);
-
-  useEffect(() => {
-    if (isArabic) {
-      document.documentElement.setAttribute('dir', 'rtl');
-      document.documentElement.setAttribute('lang', 'ar');
-    } else {
-      document.documentElement.setAttribute('dir', 'ltr');
-      document.documentElement.setAttribute('lang', 'en');
-    }
-  }, [isArabic]);
 
   const handleLogin = (token: string, refreshToken: string, expiresIn: number = 3600) => {
     const expiryTime = Date.now() + expiresIn * 1000;
     setAccessToken(token);
-    setTokenExpiry(expiryTime);
     apiClient.setTokens(token, refreshToken);
     localStorage.setItem('admin_access_token', token);
     localStorage.setItem('admin_refresh_token', refreshToken);
     localStorage.setItem('admin_token_expiry', expiryTime.toString());
-    window.location.href = '/admin/dashboard';
+    window.history.pushState({}, '', '/admin/dashboard');
+    setView('dashboard');
   };
 
   const handleLogout = () => {
     setAccessToken(null);
-    setTokenExpiry(null);
     apiClient.clearTokens();
     localStorage.removeItem('admin_access_token');
     localStorage.removeItem('admin_refresh_token');
     localStorage.removeItem('admin_token_expiry');
-    window.location.href = '/';
+    window.history.pushState({}, '', '/');
+    setView('public');
   };
 
-  // Admin Dashboard (only accessible after login)
-  if (isDashboardRoute && accessToken) {
-    return <AdminDashboardAr accessToken={accessToken} onLogout={handleLogout} />;
-  }
-
-  // Redirect /admin/dashboard to login if no token
-  if (isDashboardRoute && !accessToken) {
-    window.location.href = '/admin';
-    return null;
-  }
-
-  // Reset Password View
-  if (isResetPasswordRoute) {
+  if (view === 'reset-password') {
     return <ResetPasswordPageAr />;
   }
 
-  // Admin Login View (/admin or /login)
-  if (isAdminRoute) {
+  if (view === 'dashboard') {
+    if (!accessToken) {
+      setView('login');
+      return null;
+    }
+    return <AdminDashboardAr accessToken={accessToken} onLogout={handleLogout} />;
+  }
+
+  if (view === 'login') {
     if (accessToken) {
-      window.location.href = '/admin/dashboard';
+      window.history.pushState({}, '', '/admin/dashboard');
+      setView('dashboard');
       return null;
     }
     return <AdminLoginAr onLogin={handleLogin} />;
   }
 
-  // Public Website View
   return (
     <div className="min-h-screen bg-stone-50">
-      <>
-        <HeroSectionAr onJoinClick={scrollToEmailSection} />
-        
-        <ReaderExperienceAr />
-        <AuthorSectionAr />
-        <BookTeaserAr />
-        <div ref={emailSectionRef}>
-          <EmailWaitlistAr />
-        </div>
-        <LaunchCountdownAr />
-        <FooterAr />
-      </>
+      <HeroSectionAr onJoinClick={() => emailSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} />
+      <ReaderExperienceAr />
+      <AuthorSectionAr />
+      <BookTeaserAr />
+      <div ref={emailSectionRef}>
+        <EmailWaitlistAr />
+      </div>
+      <LaunchCountdownAr />
+      <FooterAr />
     </div>
   );
 }
