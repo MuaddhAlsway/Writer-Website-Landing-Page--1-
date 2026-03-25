@@ -36,7 +36,12 @@ export default async function handler(req, res) {
   try {
     const db = getDb();
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    // Use SQLite-compatible datetime format (no T/Z)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+      .toISOString()
+      .replace('T', ' ')
+      .replace('Z', '')
+      .split('.')[0];
 
     await db.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email]);
     await db.execute(
