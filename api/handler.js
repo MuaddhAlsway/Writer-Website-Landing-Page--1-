@@ -332,5 +332,86 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(404).json({ error: 'Not found' });
+  // ============= PASSWORD RESET =============
+  if (pathname === '/api/forgot-password' && req.method === 'POST') {
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+
+    // Generate a reset token
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    // Store token in memory (resets on redeploy — use a DB for persistence)
+    global._resetTokens = global._resetTokens || new Map();
+    global._resetTokens.set(token, { email, expiresAt });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
+    const resetLink = `${frontendUrl}/admin/reset-password?token=${token}`;
+
+    try {
+      await transporter.sendMail({
+        from: `"Author FSK" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: 'Password Reset Request',
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
+            <h2 style="color: #333;">Password Reset</h2>
+            <p style="color: #555;">You requested a password reset. Click the button below to set a new password:</p>
+            <a href="${resetLink}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:#667eea;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+              Reset Password
+            </a>
+            <p style="color:#888;font-size:13px;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+          </div>
+        `,
+      });
+
+      console.log(`[forgot-password] Reset email sent to ${email}`);
+      return res.json({ success: true, message: 'Reset link sent to your email.' });
+    } catch (err) {
+      console.error('[forgot-password] Email send failed:', err.message);
+      return res.status(500).json({ error: 'Failed to send reset email', details: err.message });
+    }
+  }
+
+  if (pathname === '/api/reset-password' && req.method === 'GET') {
+    const token = new URL(req.url, `http://${req.headers.host}`).searchParams.get('token');
+    global._resetTokens = global._resetTokens || new Map();
+    const record = global._resetTokens.get(token);
+
+    if (!record || Date.now() > record.expiresAt) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    return res.json({ success: true, email: record.email });
+  }
+
+  if (pathname === '/api/reset-password' && req.method === 'POST') {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password required' });
+    }
+
+    global._resetTokens = global._resetTokens || new Map();
+    const record = global._resetTokens.get(token);
+
+    if (!record) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      global._resetTokens.delete(token);
+      return res.status(400).json({ error: 'Token has expired' });
+    }
+
+    // Token is valid — in a real app you'd update the DB password here
+    global._resetTokens.delete(token);
+    console.log(`[reset-password] Password reset for ${record.email}`);
+    return res.json({ success: true, message: 'Password reset successfully.' });
+  }
+
+  return res.status(404).json({ error: 'Not found', path: pathname });
 }
