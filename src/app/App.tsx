@@ -17,7 +17,7 @@ type View = 'public' | 'login' | 'dashboard' | 'reset-password';
 function getInitialView(): View {
   const path = window.location.pathname;
   if (path === '/reset-password') return 'reset-password';
-  if (path === '/admin' || path === '/login') return 'login';
+  if (path === '/admin' || path === '/login' || path === '/admin/login') return 'login';
   if (path.startsWith('/admin/dashboard')) return 'dashboard';
   return 'public';
 }

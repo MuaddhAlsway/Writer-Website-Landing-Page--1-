@@ -1,4 +1,4 @@
-// Root catch-all: serve SPA for non-API routes
+// Catch-all: serves SPA for all non-API, non-static routes
 export const onRequest: PagesFunction = async (context) => {
   const url = new URL(context.request.url);
 
@@ -13,11 +13,15 @@ export const onRequest: PagesFunction = async (context) => {
     });
   }
 
-  // API routes are handled by functions/api/* — pass through
+  // Let API routes fall through to their specific function handlers
+  // This catch-all should never match /api/* because specific files take priority
   if (url.pathname.startsWith('/api/')) {
-    return context.next();
+    return new Response(JSON.stringify({ error: 'Not found', path: url.pathname }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  // All other routes: serve the SPA
-  return context.next();
+  // For all SPA routes, serve index.html
+  return context.env.ASSETS.fetch(new Request(new URL('/index.html', url.origin)));
 };
