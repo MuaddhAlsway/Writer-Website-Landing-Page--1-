@@ -22,7 +22,7 @@ export async function onRequestPost(context: any) {
   try {
     const body = await request.json();
     const backendUrl = getBackendUrl(env);
-    const resp = await fetch(`${backendUrl}/admin/refresh`, {
+    const resp = await fetch(`${backendUrl}/admin-refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

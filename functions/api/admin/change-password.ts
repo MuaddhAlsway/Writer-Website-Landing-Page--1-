@@ -22,7 +22,7 @@ export async function onRequestPost(context: any) {
   try {
     const body = await request.json();
     const backendUrl = getBackendUrl(env);
-    const resp = await fetch(`${backendUrl}/admin/change-password`, {
+    const resp = await fetch(`${backendUrl}/admin-change-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
