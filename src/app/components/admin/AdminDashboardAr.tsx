@@ -43,7 +43,6 @@ export function AdminDashboardAr({ accessToken, onLogout }: AdminDashboardArProp
     { id: 'subscribers', label: 'المشتركون', icon: Users },
     { id: 'email', label: 'إرسال بريد', icon: Mail },
     { id: 'newsletter', label: 'النشرات البريدية', icon: Mail },
-    { id: 'account', label: 'الحساب', icon: Settings },
   ];
 
   return (
