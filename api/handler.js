@@ -365,7 +365,7 @@ export default async function handler(req, res) {
 
     const token = makeResetToken(email);
     const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
-    const resetLink = `${frontendUrl}/admin/reset-password?token=${token}`;
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     try {
       await transporter.sendMail({

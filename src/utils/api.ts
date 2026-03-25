@@ -390,8 +390,9 @@ class ApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
       });
-      if (!response.ok) throw new Error('Failed to reset password');
-      return await response.json();
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to reset password');
+      return data;
     } catch (err) {
       console.error('Reset password error:', err);
       throw err;
