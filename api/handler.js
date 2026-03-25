@@ -333,6 +333,29 @@ export default async function handler(req, res) {
   }
 
   // ============= PASSWORD RESET =============
+  // Token is self-contained: base64(email:expiresAt):hmac — no memory/DB needed
+
+  function makeResetToken(email) {
+    const crypto = require('crypto');
+    const secret = process.env.RESET_TOKEN_SECRET || process.env.GMAIL_APP_PASSWORD || 'fallback-secret-key';
+    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+    const payload = Buffer.from(JSON.stringify({ email, expiresAt })).toString('base64url');
+    const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    return `${payload}.${sig}`;
+  }
+
+  function verifyResetToken(token) {
+    const crypto = require('crypto');
+    const secret = process.env.RESET_TOKEN_SECRET || process.env.GMAIL_APP_PASSWORD || 'fallback-secret-key';
+    const [payload, sig] = token.split('.');
+    if (!payload || !sig) return null;
+    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    if (expected !== sig) return null;
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (Date.now() > data.expiresAt) return null;
+    return data;
+  }
+
   if (pathname === '/api/forgot-password' && req.method === 'POST') {
     const { email } = req.body;
 
@@ -340,14 +363,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
-    // Generate a reset token
-    const token = require('crypto').randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
-
-    // Store token in memory (resets on redeploy — use a DB for persistence)
-    global._resetTokens = global._resetTokens || new Map();
-    global._resetTokens.set(token, { email, expiresAt });
-
+    const token = makeResetToken(email);
     const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
     const resetLink = `${frontendUrl}/admin/reset-password?token=${token}`;
 
@@ -378,14 +394,9 @@ export default async function handler(req, res) {
 
   if (pathname === '/api/reset-password' && req.method === 'GET') {
     const token = new URL(req.url, `http://${req.headers.host}`).searchParams.get('token');
-    global._resetTokens = global._resetTokens || new Map();
-    const record = global._resetTokens.get(token);
-
-    if (!record || Date.now() > record.expiresAt) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-
-    return res.json({ success: true, email: record.email });
+    const data = verifyResetToken(token || '');
+    if (!data) return res.status(400).json({ error: 'Invalid or expired token' });
+    return res.json({ success: true, email: data.email });
   }
 
   if (pathname === '/api/reset-password' && req.method === 'POST') {
@@ -395,21 +406,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Token and new password required' });
     }
 
-    global._resetTokens = global._resetTokens || new Map();
-    const record = global._resetTokens.get(token);
+    const data = verifyResetToken(token);
+    if (!data) return res.status(400).json({ error: 'Invalid or expired token' });
 
-    if (!record) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-
-    if (Date.now() > record.expiresAt) {
-      global._resetTokens.delete(token);
-      return res.status(400).json({ error: 'Token has expired' });
-    }
-
-    // Token is valid — in a real app you'd update the DB password here
-    global._resetTokens.delete(token);
-    console.log(`[reset-password] Password reset for ${record.email}`);
+    // Token valid — password update would go here (Turso DB call)
+    console.log(`[reset-password] Password reset for ${data.email}`);
     return res.json({ success: true, message: 'Password reset successfully.' });
   }
 
