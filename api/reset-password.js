@@ -1,109 +1,68 @@
-// In-memory storage for reset tokens
-const resetTokens = new Map();
-const adminAccounts = new Map();
+import { createClient } from '@libsql/client';
+import bcrypt from 'bcryptjs';
 
-// Initialize with a test admin account
-adminAccounts.set('admin@example.com', {
-  email: 'admin@example.com',
-  password: 'admin123',
-  id: 'admin-1',
-});
+function getDb() {
+  const url = process.env.TURSO_CONNECTION_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!url || !authToken) throw new Error('Turso not configured');
+  return createClient({ url, authToken });
+}
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
-  }
+  const db = getDb();
 
-  // GET - Verify token
   if (req.method === 'GET') {
     const { token } = req.query;
+    if (!token) return res.status(400).json({ error: 'Token required' });
 
-    if (!token) {
-      return res.status(400).json({ error: 'Token required' });
+    try {
+      const result = await db.execute(
+        "SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now')",
+        [token]
+      );
+      if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired token' });
+      return res.json({ success: true, email: result.rows[0].email });
+    } catch (err) {
+      return res.status(500).json({ error: 'Database error', details: err.message });
     }
-
-    const tokenData = resetTokens.get(token);
-
-    if (!tokenData) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-
-    if (tokenData.expiresAt < Date.now()) {
-      resetTokens.delete(token);
-      return res.status(400).json({ error: 'Token expired' });
-    }
-
-    if (tokenData.used) {
-      return res.status(400).json({ error: 'Token already used' });
-    }
-
-    return res.status(200).json({
-      success: true,
-      email: tokenData.email,
-      token: token,
-    });
   }
 
-  // POST - Reset password
   if (req.method === 'POST') {
     const { token, newPassword } = req.body;
-
     if (!token || !newPassword) {
       return res.status(400).json({ error: 'Token and new password required' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-
-    const tokenData = resetTokens.get(token);
-
-    if (!tokenData) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-
-    if (tokenData.expiresAt < Date.now()) {
-      resetTokens.delete(token);
-      return res.status(400).json({ error: 'Token expired' });
-    }
-
-    if (tokenData.used) {
-      return res.status(400).json({ error: 'Token already used' });
-    }
-
     try {
-      // Update password
-      const admin = adminAccounts.get(tokenData.email);
-      if (admin) {
-        admin.password = newPassword;
-      } else {
-        // Create new admin account if doesn't exist
-        adminAccounts.set(tokenData.email, {
-          email: tokenData.email,
-          password: newPassword,
-          id: `admin-${Date.now()}`,
-        });
-      }
+      const result = await db.execute(
+        "SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now')",
+        [token]
+      );
+      if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired token' });
 
-      // Mark token as used
-      tokenData.used = true;
+      const { email } = result.rows[0];
+      await db.execute('DELETE FROM password_reset_tokens WHERE token = ?', [token]);
 
-      return res.status(200).json({
-        success: true,
-        message: 'Password reset successfully',
-        email: tokenData.email,
-      });
+      const hashed = await bcrypt.hash(newPassword, 12);
+      await db.execute(
+        "UPDATE admins SET password = ?, updated_at = datetime('now') WHERE email = ?",
+        [hashed, email]
+      );
+
+      console.log(`[reset-password] Password updated for ${email}`);
+      return res.json({ success: true, message: 'Password reset successfully.' });
     } catch (err) {
-      console.error('Reset password error:', err);
-      return res.status(500).json({
-        error: 'Failed to reset password',
-        details: err.message,
-      });
+      console.error('[reset-password] Error:', err.message);
+      return res.status(500).json({ error: 'Reset failed', details: err.message });
     }
   }
 

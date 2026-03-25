@@ -1,116 +1,72 @@
 import nodemailer from 'nodemailer';
-import { generateEmailTemplate } from './email-template.js';
+import { createClient } from '@libsql/client';
 import crypto from 'crypto';
 
-// Setup Nodemailer with Gmail
-let transporter;
-
-function initTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
-  }
-  return transporter;
+function getDb() {
+  const url = process.env.TURSO_CONNECTION_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!url || !authToken) throw new Error('Turso not configured');
+  return createClient({ url, authToken });
 }
 
-// In-memory storage for reset tokens
-const resetTokens = new Map();
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  Object.entries(cors).forEach(([k, v]) => res.setHeader(k, v));
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Valid email required' });
   }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { email, language = 'en' } = req.body;
 
   try {
-    if (!email) {
-      return res.status(400).json({ error: 'Email required' });
-    }
-
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      return res.status(500).json({ error: 'Email service not configured' });
-    }
-
-    // Generate reset token
+    const db = getDb();
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 3600000; // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-    // Store token
-    resetTokens.set(token, {
-      email,
-      expiresAt,
-      used: false,
-    });
+    await db.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email]);
+    await db.execute(
+      'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
+      [email, token, expiresAt]
+    );
 
-    // Create reset link
-    const resetLink = `https://main.author-fatima-76r-eis.pages.dev/reset-password?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
-    // Email content
-    const isArabic = language === 'ar';
-    const emailContent = isArabic ? `
-      <p>مرحبا،</p>
-      <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. انقر على الزر أدناه لإعادة تعيين كلمة المرور الخاصة بك:</p>
-      <div style="text-align: center;">
-        <a href="${resetLink}" class="cta-button">إعادة تعيين كلمة المرور</a>
-      </div>
-      <p>أو انسخ والصق هذا الرابط في متصفحك:</p>
-      <div class="code-block">${resetLink}</div>
-      <p>هذا الرابط سينتهي صلاحيته خلال ساعة واحدة.</p>
-      <p>إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد الإلكتروني.</p>
-    ` : `
-      <p>Hello,</p>
-      <p>You requested to reset your password. Click the button below to reset your password:</p>
-      <div style="text-align: center;">
-        <a href="${resetLink}" class="cta-button">Reset Password</a>
-      </div>
-      <p>Or copy and paste this link in your browser:</p>
-      <div class="code-block">${resetLink}</div>
-      <p>This link will expire in one hour.</p>
-      <p>If you didn't request a password reset, please ignore this email.</p>
-    `;
-
-    const subject = isArabic ? 'إعادة تعيين كلمة المرور' : 'Reset Your Password';
-    const htmlContent = generateEmailTemplate(subject, emailContent, language);
-
-    // Send email
-    const mailer = initTransporter();
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
+    await transporter.sendMail({
+      from: `"Author FSK" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: subject,
-      html: htmlContent,
-      replyTo: process.env.GMAIL_USER,
-    };
-
-    console.log(`Sending password reset email to ${email}...`);
-    const info = await mailer.sendMail(mailOptions);
-    console.log(`Password reset email sent:`, info.messageId);
-
-    return res.status(200).json({
-      success: true,
-      message: isArabic ? 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' : 'Password reset link sent to your email',
-      token: token, // For testing only - remove in production
+      subject: 'Password Reset Request',
+      html: `
+        <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;">
+          <h2 style="color:#333;">Password Reset</h2>
+          <p style="color:#555;">Click the button below to reset your password:</p>
+          <a href="${resetLink}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:#667eea;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+            Reset Password
+          </a>
+          <p style="color:#888;font-size:13px;">Expires in 1 hour. If you didn't request this, ignore this email.</p>
+        </div>
+      `,
     });
+
+    console.log(`[forgot-password] Reset email sent to ${email}`);
+    return res.json({ success: true, message: 'Reset link sent to your email.' });
   } catch (err) {
-    console.error('Forgot password error:', err);
-    return res.status(500).json({
-      error: 'Failed to send password reset email',
-      details: err.message,
-    });
+    console.error('[forgot-password] Error:', err.message);
+    return res.status(500).json({ error: 'Failed to send reset email', details: err.message });
   }
 }
