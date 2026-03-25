@@ -15,13 +15,23 @@ export function ResetPasswordPageAr() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    // Extract token from URL query params
+    // Extract token from URL, save to sessionStorage, then clean the URL
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get('token');
-    setToken(tokenFromUrl);
-    
-    if (!tokenFromUrl) {
-      setError('رابط إعادة التعيين غير صحيح. الرمز مفقود.');
+
+    if (tokenFromUrl) {
+      sessionStorage.setItem('reset_token', tokenFromUrl);
+      setToken(tokenFromUrl);
+      // Remove token from URL bar
+      window.history.replaceState({}, document.title, '/reset-password');
+    } else {
+      // Try sessionStorage if navigated back
+      const stored = sessionStorage.getItem('reset_token');
+      if (stored) {
+        setToken(stored);
+      } else {
+        setError('رابط إعادة التعيين غير صحيح. الرمز مفقود.');
+      }
     }
   }, []);
 
@@ -60,6 +70,7 @@ export function ResetPasswordPageAr() {
       }
 
       await apiClient.resetPassword(token, newPassword);
+      sessionStorage.removeItem('reset_token');
       setSuccess('تم إعادة تعيين كلمة المرور بنجاح! جاري إعادة التوجيه إلى تسجيل الدخول...');
       setTimeout(() => {
         window.location.href = '/admin';

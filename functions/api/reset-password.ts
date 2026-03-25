@@ -23,15 +23,20 @@ export const onRequestPost: PagesFunction = async (context: any) => {
   try {
     const body = await request.json();
     const backendUrl = getBackendUrl(env);
+    const targetUrl = `${backendUrl}/reset-password`;
 
-    const resp = await fetch(`${backendUrl}/reset-password`, {
+    const resp = await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 
     const data = await resp.json();
-    return json(data, resp.ok ? 200 : resp.status);
+    // Pass through exact status from backend
+    return new Response(JSON.stringify(data), {
+      status: resp.status,
+      headers: cors,
+    });
   } catch (err: any) {
     return json({ error: err.message || 'Failed to reach backend' }, 502);
   }

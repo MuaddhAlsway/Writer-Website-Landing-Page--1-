@@ -56,6 +56,12 @@ export async function onRequestPost(context: any) {
       return json({ error: 'Database not configured' }, 500);
     }
 
+    // Whitelist — only these two emails can ever log in
+    const ALLOWED = ['muaddhalsway@gmail.com', 'authorfsk@gmail.com'];
+    if (!ALLOWED.includes(email.toLowerCase())) {
+      return json({ error: 'Invalid credentials' }, 401);
+    }
+
     const db = createClient({ url: env.TURSO_CONNECTION_URL, authToken: env.TURSO_AUTH_TOKEN });
     const result = await db.execute('SELECT * FROM admins WHERE email = ?', [email]);
     if (result.rows.length === 0) return json({ error: 'Invalid credentials' }, 401);

@@ -18,9 +18,10 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [tokenExpiry, setTokenExpiry] = useState<number | null>(null);
 
-  // Check if we're on admin route
-  const isAdminRoute = window.location.pathname === '/admin';
-  const isResetPasswordRoute = window.location.pathname === '/reset-password';
+  const path = window.location.pathname;
+  const isAdminRoute = path === '/admin' || path === '/login';
+  const isDashboardRoute = path === '/admin/dashboard';
+  const isResetPasswordRoute = path === '/reset-password';
 
   const scrollToEmailSection = () => {
     emailSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,8 +68,7 @@ export default function App() {
     localStorage.setItem('admin_access_token', token);
     localStorage.setItem('admin_refresh_token', refreshToken);
     localStorage.setItem('admin_token_expiry', expiryTime.toString());
-    // Redirect to admin dashboard
-    window.location.href = '/admin';
+    window.location.href = '/admin/dashboard';
   };
 
   const handleLogout = () => {
@@ -81,9 +81,15 @@ export default function App() {
     window.location.href = '/';
   };
 
-  // Admin Dashboard View
-  if (isAdminRoute && accessToken) {
+  // Admin Dashboard (only accessible after login)
+  if (isDashboardRoute && accessToken) {
     return <AdminDashboardAr accessToken={accessToken} onLogout={handleLogout} />;
+  }
+
+  // Redirect /admin/dashboard to login if no token
+  if (isDashboardRoute && !accessToken) {
+    window.location.href = '/admin';
+    return null;
   }
 
   // Reset Password View
@@ -91,8 +97,12 @@ export default function App() {
     return <ResetPasswordPageAr />;
   }
 
-  // Admin Login View
-  if (isAdminRoute && !accessToken) {
+  // Admin Login View (/admin or /login)
+  if (isAdminRoute) {
+    if (accessToken) {
+      window.location.href = '/admin/dashboard';
+      return null;
+    }
     return <AdminLoginAr onLogin={handleLogin} />;
   }
 

@@ -1,4 +1,18 @@
 import nodemailer from 'nodemailer';
+import { createClient } from '@libsql/client';
+import crypto from 'crypto';
+
+// Turso DB client (lazy init)
+let _db = null;
+function getDb() {
+  if (!_db) {
+    const url = process.env.TURSO_CONNECTION_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    if (!url || !authToken) throw new Error('Turso not configured');
+    _db = createClient({ url, authToken });
+  }
+  return _db;
+}
 
 // Newsletter HTML template
 const getNewsletterTemplate = (subject, content, language = 'en') => {
@@ -333,41 +347,25 @@ export default async function handler(req, res) {
   }
 
   // ============= PASSWORD RESET =============
-  // Token is self-contained: base64(email:expiresAt):hmac — no memory/DB needed
-
-  function makeResetToken(email) {
-    const crypto = require('crypto');
-    const secret = process.env.RESET_TOKEN_SECRET || process.env.GMAIL_APP_PASSWORD || 'fallback-secret-key';
-    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
-    const payload = Buffer.from(JSON.stringify({ email, expiresAt })).toString('base64url');
-    const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    return `${payload}.${sig}`;
-  }
-
-  function verifyResetToken(token) {
-    const crypto = require('crypto');
-    const secret = process.env.RESET_TOKEN_SECRET || process.env.GMAIL_APP_PASSWORD || 'fallback-secret-key';
-    const [payload, sig] = token.split('.');
-    if (!payload || !sig) return null;
-    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    if (expected !== sig) return null;
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    if (Date.now() > data.expiresAt) return null;
-    return data;
-  }
-
   if (pathname === '/api/forgot-password' && req.method === 'POST') {
     const { email } = req.body;
-
     if (!email || !email.includes('@')) {
       return res.status(400).json({ error: 'Valid email required' });
     }
-
-    const token = makeResetToken(email);
-    const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
-    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
-
     try {
+      const db = getDb();
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      await db.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email]);
+      await db.execute(
+        'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)',
+        [email, token, expiresAt]
+      );
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
+      const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
       await transporter.sendMail({
         from: `"Author FSK" <${process.env.GMAIL_USER}>`,
         to: email,
@@ -375,7 +373,7 @@ export default async function handler(req, res) {
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
             <h2 style="color: #333;">Password Reset</h2>
-            <p style="color: #555;">You requested a password reset. Click the button below to set a new password:</p>
+            <p style="color: #555;">You requested a password reset. Click the button below:</p>
             <a href="${resetLink}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:#667eea;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
               Reset Password
             </a>
@@ -387,31 +385,56 @@ export default async function handler(req, res) {
       console.log(`[forgot-password] Reset email sent to ${email}`);
       return res.json({ success: true, message: 'Reset link sent to your email.' });
     } catch (err) {
-      console.error('[forgot-password] Email send failed:', err.message);
+      console.error('[forgot-password] Error:', err.message);
       return res.status(500).json({ error: 'Failed to send reset email', details: err.message });
     }
   }
 
   if (pathname === '/api/reset-password' && req.method === 'GET') {
     const token = new URL(req.url, `http://${req.headers.host}`).searchParams.get('token');
-    const data = verifyResetToken(token || '');
-    if (!data) return res.status(400).json({ error: 'Invalid or expired token' });
-    return res.json({ success: true, email: data.email });
+    if (!token) return res.status(400).json({ error: 'Token required' });
+    try {
+      const db = getDb();
+      const result = await db.execute(
+        "SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now')",
+        [token]
+      );
+      if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired token' });
+      return res.json({ success: true, email: result.rows[0].email });
+    } catch (err) {
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
   }
 
   if (pathname === '/api/reset-password' && req.method === 'POST') {
     const { token, newPassword } = req.body;
-
     if (!token || !newPassword) {
       return res.status(400).json({ error: 'Token and new password required' });
     }
+    try {
+      const db = getDb();
+      const result = await db.execute(
+        "SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now')",
+        [token]
+      );
+      if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired token' });
 
-    const data = verifyResetToken(token);
-    if (!data) return res.status(400).json({ error: 'Invalid or expired token' });
+      const { email } = result.rows[0];
+      await db.execute('DELETE FROM password_reset_tokens WHERE token = ?', [token]);
 
-    // Token valid — password update would go here (Turso DB call)
-    console.log(`[reset-password] Password reset for ${data.email}`);
-    return res.json({ success: true, message: 'Password reset successfully.' });
+      const bcrypt = await import('bcryptjs');
+      const hashed = await bcrypt.hash(newPassword, 12);
+      await db.execute(
+        "UPDATE admins SET password = ?, updated_at = datetime('now') WHERE email = ?",
+        [hashed, email]
+      );
+
+      console.log(`[reset-password] Password updated for ${email}`);
+      return res.json({ success: true, message: 'Password reset successfully.' });
+    } catch (err) {
+      console.error('[reset-password] Error:', err.message);
+      return res.status(500).json({ error: 'Reset failed', details: err.message });
+    }
   }
 
   return res.status(404).json({ error: 'Not found', path: pathname });

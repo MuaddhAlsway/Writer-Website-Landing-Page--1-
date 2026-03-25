@@ -33,6 +33,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Valid email required' });
   }
 
+  // Only allow password reset for authorized admins
+  const ALLOWED = ['muaddhalsway@gmail.com', 'authorfsk@gmail.com'];
+  if (!ALLOWED.includes(email.toLowerCase())) {
+    // Return success anyway to avoid email enumeration
+    return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
+  }
+
   try {
     const db = getDb();
     const token = crypto.randomBytes(32).toString('hex');
