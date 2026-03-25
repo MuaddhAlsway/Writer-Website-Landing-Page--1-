@@ -67,7 +67,7 @@ class ApiClient {
           throw new Error('No refresh token available');
         }
 
-        const url = this.apiBase ? `${this.apiBase}/api/admin/refresh` : '/api/admin/refresh';
+        const url = this.apiBase ? `${this.apiBase}/api/admin-refresh` : '/api/admin-refresh';
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,7 +110,7 @@ class ApiClient {
       });
 
       // If 401, try to refresh token and retry
-      if (response.status === 401 && this.refreshToken && endpoint !== '/api/admin/login') {
+      if (response.status === 401 && this.refreshToken && endpoint !== '/api/admin-login') {
         try {
           const newAccessToken = await this.refreshAccessToken();
           headers['Authorization'] = `Bearer ${newAccessToken}`;
@@ -345,7 +345,7 @@ class ApiClient {
 
   // Admin Authentication
   async adminLogin(email: string, password: string) {
-    const response = await this.request('/api/admin/login', {
+    const response = await this.request('/api/admin-login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -359,7 +359,7 @@ class ApiClient {
 
   async adminLogout() {
     try {
-      await this.request('/api/admin/logout', {
+      await this.request('/api/admin-logout', {
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -414,21 +414,21 @@ class ApiClient {
   }
 
   async updateAdminProfile(updates: { email?: string; username?: string; name?: string }) {
-    return this.request('/api/admin/profile', {
+    return this.request('/api/admin-profile', {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async changePassword(currentPassword: string, newPassword: string) {
-    return this.request('/api/admin/change-password', {
+    return this.request('/api/admin-change-password', {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   }
 
   async getAdminProfile() {
-    return this.request('/api/admin/profile', {
+    return this.request('/api/admin-profile', {
       method: 'GET',
     });
   }
