@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
-import { Trash2, Download, Search, AlertCircle } from 'lucide-react';
+import { Trash2, Download, Search, AlertCircle, AlertTriangle } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 
 interface Subscriber {
@@ -18,6 +18,58 @@ interface SubscribersListArProps {
   onUpdate: () => void;
 }
 
+interface DeleteDialogProps {
+  email: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+function DeleteConfirmDialog({ email, onConfirm, onCancel, loading }: DeleteDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" dir="rtl">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      {/* Dialog */}
+      <div className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-stone-900 mb-2">تأكيد الحذف</h3>
+            <p className="text-stone-600 text-sm leading-relaxed">
+              هل أنت متأكد من حذف المشترك
+            </p>
+            <p className="text-stone-900 font-semibold text-sm mt-1 break-all">{email}</p>
+            <p className="text-stone-500 text-xs mt-2">لا يمكن التراجع عن هذا الإجراء</p>
+          </div>
+          <div className="flex gap-3 w-full mt-2">
+            <Button
+              onClick={onCancel}
+              variant="outline"
+              className="flex-1 border-stone-300 text-stone-700 hover:bg-stone-50"
+              disabled={loading}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            >
+              {loading ? 'جاري الحذف...' : 'حذف'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArProps) {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +77,7 @@ export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArPr
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLang, setFilterLang] = useState<'all' | 'en' | 'ar'>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
     apiClient.setToken(accessToken);
@@ -44,20 +97,28 @@ export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArPr
     }
   };
 
-  const handleDelete = async (email: string) => {
-    if (!confirm(`هل أنت متأكد من حذف ${email}؟`)) return;
+  const handleDeleteClick = (email: string) => {
+    setDeleteTarget(email);
+  };
 
-    setDeleting(email);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(deleteTarget);
     try {
-      await apiClient.deleteSubscriber(email);
-      setSubscribers(subscribers.filter(s => s.email !== email));
+      await apiClient.deleteSubscriber(deleteTarget);
+      setSubscribers(subscribers.filter(s => s.email !== deleteTarget));
       onUpdate();
     } catch (err: any) {
       console.error('Failed to delete subscriber:', err);
-      alert(err.message || 'فشل حذف المشترك');
+      setError(err.message || 'فشل حذف المشترك');
     } finally {
       setDeleting(null);
+      setDeleteTarget(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null);
   };
 
   const handleExport = () => {
@@ -99,6 +160,16 @@ export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArPr
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Delete Confirmation Popup */}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          email={deleteTarget}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          loading={deleting === deleteTarget}
+        />
+      )}
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -162,8 +233,8 @@ export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArPr
                     <td className="py-3 px-4 text-stone-600">{subscriber.name || '-'}</td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        subscriber.language === 'ar' 
-                          ? 'bg-amber-100 text-amber-800' 
+                        subscriber.language === 'ar'
+                          ? 'bg-amber-100 text-amber-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
                         {subscriber.language === 'ar' ? 'عربي' : 'إنجليزي'}
@@ -174,7 +245,7 @@ export function SubscribersListAr({ accessToken, onUpdate }: SubscribersListArPr
                     </td>
                     <td className="py-3 px-4 text-center">
                       <Button
-                        onClick={() => handleDelete(subscriber.email)}
+                        onClick={() => handleDeleteClick(subscriber.email)}
                         disabled={deleting === subscriber.email}
                         variant="ghost"
                         size="sm"
