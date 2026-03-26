@@ -1,7 +1,6 @@
 // Detect environment and set API base URL
 const getApiBase = () => {
-  // Always use relative paths - Cloudflare Pages functions handle routing
-  return '';
+  return import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app/api';
 };
 
 const FORMSPREE_ID = 'xeeevlgk';
@@ -67,7 +66,7 @@ class ApiClient {
           throw new Error('No refresh token available');
         }
 
-        const url = this.apiBase ? `${this.apiBase}/api/admin-refresh` : '/api/admin-refresh';
+        const url = `${this.apiBase}/admin-refresh`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -165,7 +164,7 @@ class ApiClient {
   // Subscribers
   async addSubscriber(email: string, language: string = 'en') {
     try {
-      const response = await fetch(`/api/subscribers`, {
+      const response = await fetch(`${this.apiBase}/subscribers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, language }),
@@ -181,7 +180,7 @@ class ApiClient {
 
   async getSubscribers() {
     try {
-      const response = await fetch(`/api/subscribers`, {
+      const response = await fetch(`${this.apiBase}/subscribers`, {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
       if (!response.ok) throw new Error('Failed to get subscribers');
@@ -194,7 +193,7 @@ class ApiClient {
 
   async deleteSubscriber(email: string) {
     try {
-      const response = await fetch(`/api/subscribers/${email}`, {
+      const response = await fetch(`${this.apiBase}/subscribers/${email}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
@@ -209,7 +208,7 @@ class ApiClient {
   // Newsletters
   async createNewsletter(title: string, content: string, language: string = 'en') {
     try {
-      const response = await fetch(`/api/newsletters`, {
+      const response = await fetch(`${this.apiBase}/newsletters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
         body: JSON.stringify({ subject: title, content, language }),
@@ -224,7 +223,7 @@ class ApiClient {
 
   async getNewsletters() {
     try {
-      const response = await fetch(`/api/newsletters`, {
+      const response = await fetch(`${this.apiBase}/newsletters`, {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
       if (!response.ok) throw new Error('Failed to get newsletters');
@@ -237,8 +236,7 @@ class ApiClient {
 
   async sendNewsletter(id: string, recipients?: string[]) {
     try {
-      // Get the newsletter first to get its content
-      const newslettersResponse = await fetch(`/api/newsletters`, {
+      const newslettersResponse = await fetch(`${this.apiBase}/newsletters`, {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
       
@@ -253,8 +251,7 @@ class ApiClient {
         throw new Error('Newsletter not found');
       }
 
-      // Get subscribers to send to
-      const subscribersResponse = await fetch(`/api/subscribers`, {
+      const subscribersResponse = await fetch(`${this.apiBase}/subscribers`, {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
 
@@ -269,8 +266,7 @@ class ApiClient {
         throw new Error('No subscribers to send to');
       }
 
-      // Send the newsletter
-      const response = await fetch(`/api/send-newsletter`, {
+      const response = await fetch(`${this.apiBase}/send-newsletter`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
         body: JSON.stringify({ 
@@ -302,7 +298,7 @@ class ApiClient {
 
   async deleteNewsletter(id: string) {
     try {
-      const response = await fetch(`/api/newsletters`, {
+      const response = await fetch(`${this.apiBase}/newsletters`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
         body: JSON.stringify({ id }),
@@ -318,7 +314,7 @@ class ApiClient {
   // Email - Send via backend API (with email template and icon)
   async sendEmail(recipients: string[], subject: string, content: string, image?: string, language: string = 'en') {
     try {
-      const response = await fetch(`/api/send-email`, {
+      const response = await fetch(`${this.apiBase}/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -370,7 +366,7 @@ class ApiClient {
 
   async requestPasswordReset(email: string) {
     try {
-      const response = await fetch(`/api/forgot-password`, {
+      const response = await fetch(`${this.apiBase}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, language: 'en' }),
@@ -385,7 +381,7 @@ class ApiClient {
 
   async resetPassword(token: string, newPassword: string) {
     try {
-      const response = await fetch(`/api/reset-password`, {
+      const response = await fetch(`${this.apiBase}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
@@ -401,7 +397,7 @@ class ApiClient {
 
   async verifyResetToken(token: string) {
     try {
-      const response = await fetch(`/api/reset-password?token=${token}`, {
+      const response = await fetch(`${this.apiBase}/reset-password?token=${token}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });

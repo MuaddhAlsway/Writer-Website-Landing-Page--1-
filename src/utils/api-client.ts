@@ -27,7 +27,7 @@ class ApiClient {
   private baseUrl: string = '';
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_BACKEND_URL || '/api';
+    this.baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app/api';
   }
 
   setToken(token: string) {
