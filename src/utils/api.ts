@@ -1,7 +1,8 @@
 // Detect environment and set API base URL
-// v2 - points directly to Vercel, no /api suffix (endpoints include /api/ prefix)
 const getApiBase = () => {
-  return (import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app').replace(/\/api$/, '');
+  const base = import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app';
+  // Ensure base ends with /api
+  return base.endsWith('/api') ? base : `${base}/api`;
 };
 
 const FORMSPREE_ID = 'xeeevlgk';
@@ -342,7 +343,7 @@ class ApiClient {
 
   // Admin Authentication
   async adminLogin(email: string, password: string) {
-    const response = await this.request('/api/admin-login', {
+    const response = await this.request('/admin-login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -356,7 +357,7 @@ class ApiClient {
 
   async adminLogout() {
     try {
-      await this.request('/api/admin-logout', {
+      await this.request('/admin-logout', {
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -411,21 +412,21 @@ class ApiClient {
   }
 
   async updateAdminProfile(updates: { email?: string; username?: string; name?: string }) {
-    return this.request('/api/admin-profile', {
+    return this.request('/admin-profile', {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async changePassword(currentPassword: string, newPassword: string) {
-    return this.request('/api/admin-change-password', {
+    return this.request('/admin-change-password', {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   }
 
   async getAdminProfile() {
-    return this.request('/api/admin-profile', {
+    return this.request('/admin-profile', {
       method: 'GET',
     });
   }

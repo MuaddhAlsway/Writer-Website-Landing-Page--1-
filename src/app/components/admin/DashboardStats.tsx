@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Users, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
+const API = 'https://writer-website-landing-page-1.vercel.app/api';
+
 interface DashboardStatsProps {
   accessToken: string;
 }
