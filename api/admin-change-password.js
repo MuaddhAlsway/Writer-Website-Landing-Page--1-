@@ -35,7 +35,7 @@ export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
-  const secret = process.env.JWT_SECRET || process.env.GMAIL_APP_PASSWORD || 'secret-key';
+  const secret = process.env.JWT_SECRET || 'jwt-secret-key-author-fsk';
   const payload = verifyToken(authHeader.replace('Bearer ', ''), secret);
   if (!payload) return res.status(401).json({ error: 'Invalid or expired token' });
 

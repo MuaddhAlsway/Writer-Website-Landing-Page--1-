@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   const { refreshToken } = req.body;
   if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
 
-  const secret = process.env.JWT_SECRET || process.env.GMAIL_APP_PASSWORD || 'secret-key';
+  const secret = process.env.JWT_SECRET || 'jwt-secret-key-author-fsk';
   const payload = verifyToken(refreshToken, secret);
 
   if (!payload || payload.type !== 'refresh') {
