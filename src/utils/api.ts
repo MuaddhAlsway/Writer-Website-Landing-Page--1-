@@ -1,6 +1,7 @@
 // Detect environment and set API base URL
+// v2 - points directly to Vercel, no /api suffix (endpoints include /api/ prefix)
 const getApiBase = () => {
-  return import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app/api';
+  return (import.meta.env.VITE_BACKEND_URL || 'https://writer-website-landing-page-1.vercel.app').replace(/\/api$/, '');
 };
 
 const FORMSPREE_ID = 'xeeevlgk';
