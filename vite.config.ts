@@ -31,5 +31,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      external: [
+        'bcryptjs',
+        'better-sqlite3',
+        'nodemailer',
+        'express',
+        'cors',
+        'helmet',
+        'express-rate-limit',
+        '@libsql/client',
+        'jsonwebtoken',
+        'mailersend',
+        'mailgun.js',
+        'resend',
+        '@sendgrid/mail',
+      ],
+    },
   },
 })
