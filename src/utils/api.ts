@@ -195,9 +195,10 @@ class ApiClient {
 
   async deleteSubscriber(email: string) {
     try {
-      const response = await fetch(`${this.apiBase}/subscribers/${email}`, {
+      const response = await fetch(`${this.apiBase}/subscribers`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.accessToken}` },
+        body: JSON.stringify({ email }),
       });
       if (!response.ok) throw new Error('Failed to delete subscriber');
       return await response.json();
