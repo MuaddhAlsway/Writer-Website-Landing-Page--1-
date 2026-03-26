@@ -23,7 +23,9 @@ async function verifyPassword(password, storedHash) {
   }
   // Handle PBKDF2 (from CF change-password)
   if (storedHash.startsWith('pbkdf2:')) {
-    const [, salt, hash] = storedHash.split(':');
+    const parts = storedHash.split(':');
+    const salt = parts[1];
+    const hash = parts.slice(2).join(':'); // rejoin in case base64 contains ':'
     const result = await new Promise((resolve, reject) => {
       crypto.pbkdf2(password, salt, 100000, 32, 'sha256', (err, key) => {
         if (err) reject(err);
