@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { generateEmailTemplate } from './lib/email-template.js';
+import { generateEmailTemplate } from './email-template.js';
 
 // Setup Nodemailer with Gmail
 let transporter;

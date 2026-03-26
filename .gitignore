@@ -1,3 +1,7 @@
 node_modules
 .vercel
 .env*.local
+
+# Build output — Vercel runs its own build, never commit this
+dist
+build

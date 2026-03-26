@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { generateNewsletterTemplate } from './lib/newsletter-template.js';
+import { generateNewsletterTemplate } from './newsletter-template.js';
 
 let transporter;
 

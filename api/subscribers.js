@@ -1,111 +1,72 @@
 import { createClient } from '@libsql/client';
 
-// Initialize Turso client
-const turso = createClient({
-  url: process.env.TURSO_CONNECTION_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+// WHY: createClient() must be inside a function, NOT at module level.
+// Vercel evaluates top-level code during the build/bundle phase when
+// process.env variables are undefined. Lazy init ensures this only
+// runs at request time when env vars are available.
+function getDb() {
+  return createClient({
+    url: process.env.TURSO_CONNECTION_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+}
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.setHeader('Content-Type', 'application/json');
 
-  // Handle OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const db = getDb();
 
   try {
-    // POST - Subscribe
     if (req.method === 'POST') {
       const { email, language } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({ error: 'Email required' });
+      if (!email) return res.status(400).json({ error: 'Email required' });
+
+      const existing = await db.execute(
+        'SELECT id FROM subscribers WHERE email = ?', [email]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: 'Already subscribed' });
       }
 
-      try {
-        // Check if already subscribed
-        const existing = await turso.execute(
-          'SELECT * FROM subscribers WHERE email = ?',
-          [email]
-        );
+      await db.execute(
+        'INSERT INTO subscribers (email, language, name) VALUES (?, ?, ?)',
+        [email, language || 'en', '']
+      );
 
-        if (existing.rows.length > 0) {
-          return res.status(400).json({ error: 'Already subscribed' });
-        }
-
-        // Add to Turso
-        await turso.execute(
-          'INSERT INTO subscribers (email, language, name) VALUES (?, ?, ?)',
-          [email, language || 'en', '']
-        );
-
-        console.log(`✅ Subscriber added to Turso: ${email}`);
-
-        const subscriber = {
-          email,
-          language: language || 'en',
-          subscribedAt: new Date().toISOString(),
-          name: '',
-        };
-
-        return res.status(200).json({ success: true, subscriber });
-      } catch (err) {
-        console.error('Database error:', err.message);
-        return res.status(500).json({ error: 'Database error', details: err.message });
-      }
+      return res.status(200).json({
+        success: true,
+        subscriber: { email, language: language || 'en', subscribedAt: new Date().toISOString(), name: '' },
+      });
     }
 
-    // GET - List subscribers
     if (req.method === 'GET') {
-      try {
-        const result = await turso.execute('SELECT * FROM subscribers ORDER BY subscribedAt DESC');
-        const subscribers = result.rows.map((row) => ({
-          email: row.email,
-          language: row.language,
-          subscribedAt: row.subscribedAt,
-          name: row.name,
-        }));
-
-        console.log(`✅ Retrieved ${subscribers.length} subscribers from Turso`);
-        return res.status(200).json({ subscribers, total: subscribers.length });
-      } catch (err) {
-        console.error('Database error:', err.message);
-        return res.status(500).json({ error: 'Database error', details: err.message });
-      }
+      const result = await db.execute('SELECT * FROM subscribers ORDER BY subscribedAt DESC');
+      const subscribers = result.rows.map((row) => ({
+        email: row.email,
+        language: row.language,
+        subscribedAt: row.subscribedAt,
+        name: row.name,
+      }));
+      return res.status(200).json({ subscribers, total: subscribers.length });
     }
 
-    // DELETE - Remove subscriber
     if (req.method === 'DELETE') {
-      try {
-        const { email } = req.body;
-        if (!email) {
-          return res.status(400).json({ error: 'Email required' });
-        }
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'Email required' });
 
-        const result = await turso.execute(
-          'DELETE FROM subscribers WHERE email = ?',
-          [email]
-        );
-
-        if (result.rowsAffected > 0) {
-          console.log(`✅ Subscriber deleted from Turso: ${email}`);
-          return res.status(200).json({ success: true });
-        }
-        return res.status(404).json({ error: 'Subscriber not found' });
-      } catch (err) {
-        console.error('Database error:', err.message);
-        return res.status(500).json({ error: 'Database error', details: err.message });
-      }
+      const result = await db.execute('DELETE FROM subscribers WHERE email = ?', [email]);
+      if (result.rowsAffected > 0) return res.status(200).json({ success: true });
+      return res.status(404).json({ error: 'Subscriber not found' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('API error:', err.message);
+    console.error('Subscribers API error:', err.message);
     return res.status(500).json({ error: 'Server error', details: err.message });
   }
 }

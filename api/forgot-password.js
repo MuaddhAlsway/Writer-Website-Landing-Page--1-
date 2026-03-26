@@ -2,6 +2,11 @@ import nodemailer from 'nodemailer';
 import { createClient } from '@libsql/client';
 import crypto from 'crypto';
 
+// WHY: Both getDb() and getTransporter() are lazy functions.
+// Vercel's build phase evaluates module-level code with no env vars.
+// Putting initialization inside functions ensures they only run at
+// request time (runtime), when process.env is fully populated.
+
 function getDb() {
   const url = process.env.TURSO_CONNECTION_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -9,13 +14,15 @@ function getDb() {
   return createClient({ url, authToken });
 }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) throw new Error('Gmail credentials not configured');
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -33,22 +40,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Valid email required' });
   }
 
-  // Only allow password reset for authorized admins
   const ALLOWED = ['muaddhalsway@gmail.com', 'authorfsk@gmail.com'];
   if (!ALLOWED.includes(email.toLowerCase())) {
-    // Return success anyway to avoid email enumeration
+    // Don't reveal whether the email exists
     return res.json({ success: true, message: 'If an account exists, a reset link has been sent.' });
   }
 
   try {
     const db = getDb();
     const token = crypto.randomBytes(32).toString('hex');
-    // Use SQLite-compatible datetime format (no T/Z)
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-      .toISOString()
-      .replace('T', ' ')
-      .replace('Z', '')
-      .split('.')[0];
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+      .toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
 
     await db.execute('DELETE FROM password_reset_tokens WHERE email = ?', [email]);
     await db.execute(
@@ -59,6 +61,7 @@ export default async function handler(req, res) {
     const frontendUrl = process.env.FRONTEND_URL || 'https://main.author-fatima-76r-eis.pages.dev';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
+    const transporter = getTransporter();
     await transporter.sendMail({
       from: `"Author FSK" <${process.env.GMAIL_USER}>`,
       to: email,
